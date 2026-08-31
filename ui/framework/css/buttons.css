@@ -1,0 +1,63 @@
+/*
+----------------------------------------
+RIG Framework (built for CFX Platforms)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig
+License: https://github.com/rig-fivem/rig/blob/main/LICENSE
+----------------------------------------
+*/
+
+.button_group {
+    display: flex;
+    justify-content: space-between;
+    gap: 1vh;
+}
+
+.button_group .btn {
+    padding: 0.5vh 1.5vh;
+    font-size: 0.7rem;
+    font-family: var(--text_font);
+    background: var(--background_panel);
+    color: var(--text_secondary);
+    border: 0.1vh solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5vh;
+    text-transform: uppercase;
+    letter-spacing: 0.08rem;
+    position: relative;
+}
+
+.button_group .btn:active {
+    background: var(--background_main);
+}
+
+.btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn.primary {
+    background: var(--accent2);
+    color: #000;
+    border-color: var(--accent);
+}
+
+.btn.primary:hover {
+    background: var(--accent);
+}
+
+.btn.secondary {
+    background: var(--background_panel);
+    color: var(--text_secondary);
+}
+
+.btn.secondary:hover {
+    color: var(--text_primary);
+    background: var(--background_hover);
+}

@@ -1,0 +1,51 @@
+/*
+----------------------------------------
+RIG Framework (built for CFX Platforms)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig
+License: https://github.com/rig-fivem/rig/blob/main/LICENSE
+----------------------------------------
+*/
+
+.hotbar_wrapper {
+    position: fixed;
+    left: 50%;
+    bottom: 3vh;
+    transform: translateX(-50%);
+    z-index: 11;
+    background: var(--background_main);
+    border: 0.1vh solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--border_radius_outer);
+    padding: 0.5vh;
+    user-select: none;
+}
+
+.hotbar_wrapper .slot_group {
+    border: none !important;
+}
+
+.hotbar_wrapper .slot_group_title {
+    display: none !important;
+}
+
+.hotbar_wrapper .slots_container {
+    display: grid;
+    gap: 0.4vh;
+    border: none !important;
+    overflow: hidden;
+}
+
+.hotbar_wrapper .slots_container::-webkit-scrollbar {
+    display: none;
+}
+
+.hotbar_wrapper .body_slot {
+    border-radius: var(--border_radius_inner);
+}
+
+.hotbar_wrapper .slot_hotkey {
+    top: 0.3vh;
+    left: 0.3vh;
+    padding: 0.15vh 0.4vh;
+}

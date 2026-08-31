@@ -1,0 +1,109 @@
+/*
+----------------------------------------
+RIG Framework (built for CFX Platforms)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig
+License: https://github.com/rig-fivem/rig/blob/main/LICENSE
+----------------------------------------
+*/
+
+.footer {
+    position: absolute;
+    bottom: 3vh;
+    right: 2vw;
+    width: auto;
+    height: auto;
+    background: var(--background_main);
+    border: 0.1vh solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--border_radius_outer);
+    box-shadow: 0 0.8vh 2vh rgba(0, 0, 0, 0.35);
+    color: var(--text_primary);
+    font-family: var(--text_font);
+    z-index: 11;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    user-select: none;
+    padding: 0.8vh 1.2vw;
+    gap: 1vw;
+}
+
+.footer_section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+}
+
+.footer_section.left,
+.footer_section.center,
+.footer_section.right {
+    flex: 0 0 auto;
+    border: none;
+}
+
+.footer_section:empty {
+    display: none;
+}
+
+.footer_group,
+.footer_container,
+.footer_actions_group {
+    display: flex;
+    gap: 0.9vw;
+    align-items: center;
+}
+
+.footer_action {
+    display: flex;
+    align-items: center;
+    gap: 0.5vw;
+    font-size: 0.72rem;
+}
+
+.footer_action.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.footer_key {
+    background: var(--background_panel);
+    border: 0.1vh solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--border_radius_inner);
+    padding: 0.25vh 0.7vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    white-space: nowrap;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.05rem;
+    font-family: var(--text_font);
+}
+
+.footer_label {
+    font-size: 0.68rem;
+    color: var(--text_secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06rem;
+}
+
+.footer_text {
+    font-size: 0.68rem;
+    color: var(--text_secondary);
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.05rem;
+    text-transform: uppercase;
+}
+
+.footer_button_group {
+    display: flex;
+    align-items: center;
+    gap: 0.6vw;
+}

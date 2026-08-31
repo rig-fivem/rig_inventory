@@ -1,0 +1,113 @@
+/*
+----------------------------------------
+RIG Framework (built for CFX Platforms)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig
+License: https://github.com/rig-fivem/rig/blob/main/LICENSE
+----------------------------------------
+*/
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    position: absolute;
+    top: 3vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: 80vw;
+    height: 6vh;
+    background: var(--background_main);
+    border: 0.1vh solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--border_radius_outer);
+    box-shadow: 0 0.8vh 2vh rgba(0, 0, 0, 0.35);
+    z-index: 11;
+    font-family: var(--header_font);
+    overflow: hidden;
+}
+
+.header::after {
+    content: none;
+}
+
+.header_section {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    height: 100%;
+    margin: 0 1.4vw;
+}
+
+.header_group {
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+    height: 100%;
+    line-height: 1;
+}
+
+.header_logo {
+    width: 2.2vw;
+    height: 2.2vw;
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%;
+}
+
+.header_text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--text_primary);
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05rem;
+}
+
+.header_text span {
+    font-size: 0.65rem;
+    font-weight: normal;
+    font-family: var(--text_font);
+    color: var(--text_secondary);
+    letter-spacing: 0.1rem;
+    text-transform: uppercase;
+}
+
+.header_tabs {
+    display: flex;
+    height: 100%;
+    align-items: center;
+}
+
+.header_tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 2vh;
+    font-size: 0.7rem;
+    font-family: var(--text_font);
+    text-transform: uppercase;
+    letter-spacing: 0.1rem;
+    color: var(--text_secondary);
+    cursor: pointer;
+    border: 0.1vh solid transparent;
+    border-top: none;
+    border-bottom: none;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    position: relative;
+}
+
+.header_tab:hover {
+    color: var(--text_primary);
+    background: var(--background_hover);
+}
+
+.header_tab.active {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}

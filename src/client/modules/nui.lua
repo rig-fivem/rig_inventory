@@ -98,8 +98,6 @@ function m.build_ui(ui)
         return
     end
 
-    print("sending ui?")
-
     local safe_ui = m.sanitize(ui, "ui")
     if not safe_ui then
         log("error", "nui: build_ui sanitize failed")
@@ -140,6 +138,19 @@ function m.get_player_headshot(player_ped)
     return txd and ("https://nui-img/%s/%s?v=%d"):format(txd, txd, GetGameTimer())
 end
 
+--- @section Inventory
+
+function m.update_grid(items, section_key)
+    if type(items) ~= "table" then
+        log("warn", "update_grid: invalid items table")
+        return
+    end
+
+    local safe_items = m.sanitize(items, "inventory_update")
+
+    SendNUIMessage({ func = "update_grid", items = safe_items, section_key = section_key })
+end
+
 --- @section NUI Callbacks
 
 RegisterNUICallback("nui:remove_focus", function()
@@ -152,6 +163,12 @@ RegisterNUICallback("nui:handler", function(data, cb)
 
     if not data or not data.action then
         if cb then cb(false) end
+        return
+    end
+
+    if data.action == "grid_moved_item" then
+        TriggerServerEvent("rig_inventory:server:move_item", data.dataset)
+        if cb then cb({ success = true }) end
         return
     end
 

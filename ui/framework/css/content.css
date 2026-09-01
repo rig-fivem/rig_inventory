@@ -55,6 +55,7 @@ License: https://github.com/rig-fivem/rig/blob/main/LICENSE
     justify-content: space-between;
     align-items: center;
     text-transform: uppercase;
+    text-shadow: var(--text_shadow_hard);
     letter-spacing: 0.1rem;
 }
 

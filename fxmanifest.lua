@@ -20,7 +20,8 @@ lua54 "yes"
 ui_page "ui/index.html"
 files {
     "locales/*.json",
-    "ui/**/*"
+    "ui/**/*",
+    "images/*.png"
 }
 
 shared_scripts {
@@ -33,6 +34,7 @@ client_scripts {
     "src/client/main.lua"
 }
 server_scripts {
+    "src/server/modules/*.lua",
     "src/server/main.lua"
 }
 

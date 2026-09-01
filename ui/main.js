@@ -41,8 +41,6 @@ HANDLERS.remove_modal = (data) => {
 
 HANDLERS.build_ui = (data) => {
 
-    console.log("nui building ui?")
-
     if (!data.payload) {
         console.warn("[UI Builder] No UI data provided");
         return;
@@ -63,6 +61,17 @@ HANDLERS.close_ui = () => {
         window.ui_instance.destroy();
         window.ui_instance = null;
     }
+};
+
+/** Inventory */
+
+HANDLERS.update_grid = (data) => {
+    if (!data || !data.items || !data.section_key) return;
+
+    const ui = window.ui_instance;
+    if (!ui || !ui.content) return;
+
+    ui.content.update_grid_from_server(data.items, data.section_key);
 };
 
 /**

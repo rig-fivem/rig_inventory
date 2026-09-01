@@ -26,7 +26,8 @@ core.locales = {}
 core.settings = {
     general = {
         debug = GetConvarBool("rig:general:debug", false),
-        language = GetConvar("rig:general:language", "en")
+        language = GetConvar("rig:general:language", "en"),
+        image_path = GetConvar("rig:inventory:image_path", "nui://rig_inventory/images/")
     }
 }
 

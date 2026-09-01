@@ -1,78 +1,18 @@
---- @script src.client.inventory.actions
---- @description Handles client-side inventory UI building with center preview ped and camera DoF blur.
+--- @module nui.inventory
+--- @file src.client.nui.inventory
+--- @description Handles client-side inventory UI building.
 
 --- @section Imports
 
 local item_defs = require("configs.items")
 local inv_defs = require("configs.inventories")
+local metadata_defs = require("configs.metadata")
 
 local _nui = require("src.client.modules.nui")
 
---- @section State
+--- @section Initialisation
 
-local inventory_open = false
-local preview_ped = nil
-local preview_cam = nil
-local client_drops = {} -- @todo populated once a drops/world-item system exists
-
---- @section Helpers
-
-local function stop_ped_preview()
-    if preview_cam then
-        RenderScriptCams(false, true, 250, true, true)
-        DestroyCam(preview_cam, false)
-        preview_cam = nil
-    end
-
-    if preview_ped and DoesEntityExist(preview_ped) then
-        DeleteEntity(preview_ped)
-        preview_ped = nil
-    end
-end
-
-local function start_ped_preview()
-    stop_ped_preview()
-    local player_ped = PlayerPedId()
-    local player_coords = GetEntityCoords(player_ped)
-    local cam_coords = GetGameplayCamCoord()
-    local cam_rot = GetGameplayCamRot(2)
-    local yaw = math.rad(cam_rot.z)
-    local dist = 3.0
-    local spawn_x = cam_coords.x - math.sin(yaw) * dist
-    local spawn_y = cam_coords.y + math.cos(yaw) * dist
-    local spawn_z = player_coords.z
-
-    preview_ped = ClonePed(player_ped, false, false, false)
-    SetEntityCoords(preview_ped, spawn_x, spawn_y, spawn_z, false, false, false, false)
-    SetEntityHeading(preview_ped, cam_rot.z + 180.0)
-    SetEntityInvincible(preview_ped, true)
-    SetEntityCollision(preview_ped, false, false)
-    FreezeEntityPosition(preview_ped, true)
-    SetBlockingOfNonTemporaryEvents(preview_ped, true)
-
-    preview_cam = CreateCamWithParams(
-        "DEFAULT_SCRIPTED_CAMERA",
-        cam_coords.x, cam_coords.y, cam_coords.z,
-        cam_rot.x, cam_rot.y, cam_rot.z,
-        GetGameplayCamFov(),
-        false, 0
-    )
-
-    SetCamActive(preview_cam, true)
-    RenderScriptCams(true, true, 250, true, true)
-    
-    SetCamUseShallowDofMode(preview_cam, true)
-    SetCamNearDof(preview_cam, 2.0)
-    SetCamFarDof(preview_cam, 3.0)
-    SetCamDofStrength(preview_cam, 1.0)
-
-    CreateThread(function()
-        while DoesCamExist(preview_cam) do
-            SetUseHiDof()
-            Wait(0)
-        end
-    end)
-end
+local m = {}
 
 --- @section Helpers
 
@@ -89,9 +29,19 @@ local function build_header()
             center = { { type = "tabs" } },
             right = {
                 {
-                    type = "group",
-                    items = {
-                        { type = "text", subtitle = "ID: " .. player_source }
+                    type = "buttons",
+                    buttons = {
+                        {
+                            id = "close_inventory",
+                            label = "Close",
+                            class = "primary",
+                            should_close = true,
+                            on_action = function()
+                                TriggerServerEvent("rig_inventory:server:close_inventory")
+                                inventory_open = false
+                                ClearTimecycleModifier()
+                            end
+                        }
                     }
                 }
             }
@@ -116,10 +66,9 @@ local function build_footer()
                             label = "Close",
                             should_close = true,
                             on_action = function()
-                                stop_ped_preview()
-                                FreezeEntityPosition(PlayerPedId(), false)
                                 TriggerServerEvent("rig_inventory:server:close_inventory")
                                 inventory_open = false
+                                ClearTimecycleModifier()
                             end
                         }
                     }
@@ -135,7 +84,7 @@ local function build_loadout_items(loadout)
         local def = item_defs[entry.id]
         items[slot_id] = {
             id = entry.id,
-            image = core.convars.image_path .. (entry.image or (def and def.image) or "default.png"),
+            image = core.settings.general.image_path .. (entry.image or (def and def.image) or "default.png"),
             label = entry.label or (def and def.label) or entry.id,
             category = entry.category or (def and def.category),
             dataset = { slot_id = slot_id, serial = entry.serial },
@@ -169,7 +118,7 @@ local function build_hotbar(player_data)
             local slot_key = tostring(slot_str)
             hotbar_items[slot_key] = {
                 id = entry.id,
-                image = core.convars.image_path .. (entry.image or (def and def.image) or "default.png"),
+                image = core.settings.general.image_path .. (entry.image or (def and def.image) or "default.png"),
                 quantity = entry.quantity or 1,
                 category = entry.category or (def and def.category) or "misc",
                 progress = entry.durability and { value = entry.durability } or (entry.progress or nil),
@@ -189,7 +138,7 @@ local function build_hotbar(player_data)
     return {
         slot_count = 8,
         show_slot_numbers = true,
-        layout = { slot_size = "58px" },
+        layout = { slot_size = "64px" },
         items = hotbar_items
     }
 end
@@ -199,6 +148,7 @@ local function build_center(player_data)
     local items = build_loadout_items(loadout)
     return {
         type = "slots",
+        title = { text = "Loadout" },
         layout = { scroll_y = "none", scroll_x = "none" },
         allow_cross_group_swap = true,
         groups = {
@@ -207,16 +157,16 @@ local function build_center(player_data)
                 layout_type = "positioned",
                 collapsible = false,
                 slots = {
-                    { id = "helmet", label = "HELMET", position = { top = "2%", left = "10%" }, size = "64px" },
-                    { id = "mask", label = "MASK", position = { top = "2%", right = "10%" }, size = "64px" },
-                    { id = "backpack", label = "BACKPACK", position = { top = "22%", left = "0%" }, size = "64px" },
-                    { id = "sling1", label = "SLING 1", position = { top = "22%", right = "0%" }, size = "64px" },
-                    { id = "vest", label = "VEST", position = { top = "42%", left = "0%" }, size = "64px" },
-                    { id = "sling2", label = "SLING 2", position = { top = "42%", right = "0%" }, size = "64px" },
-                    { id = "shirt", label = "SHIRT", position = { top = "62%", left = "0%" }, size = "64px" },
-                    { id = "melee", label = "MELEE", position = { top = "62%", right = "0%" }, size = "64px" },
-                    { id = "pants", label = "PANTS", position = { top = "82%", left = "10%" }, size = "64px" },
-                    { id = "shoes", label = "SHOES", position = { top = "82%", right = "10%" }, size = "64px" },
+                    { id = "helmet", label = "Helmet", position = { top = "0%", left = "0%" }, size = "72px" },
+                    { id = "mask", label = "Mask", position = { top = "0%", left = "30%" }, size = "72px" },
+                    { id = "bag", label = "Bag", position = { top = "22%", left = "0%" }, size = "72px" },
+                    { id = "primary", label = "Sling 1", position = { top = "22%", left = "30%" }, size = "72px" },
+                    { id = "vest", label = "Vest", position = { top = "44%", left = "0%" }, size = "72px" },
+                    { id = "secondary", label = "Sling 2", position = { top = "44%", left = "30%" }, size = "72px" },
+                    { id = "shirt", label = "Shirt", position = { top = "66%", left = "0%" }, size = "72px" },
+                    { id = "melee", label = "Melee", position = { top = "66%", left = "30%" }, size = "72px" },
+                    { id = "pants", label = "Pants", position = { top = "85%", left = "0%" }, size = "72px" },
+                    { id = "shoes", label = "Shoes", position = { top = "85%", left = "30%" }, size = "72px" }
                 },
                 items = items
             }
@@ -224,32 +174,88 @@ local function build_center(player_data)
     }
 end
 
-local function build_items_for_grid(raw_items, group_id)
-    local items = {}
+local function build_item_actions(def, col, row, entry, group)
+    if not def or not def.actions then return nil end
+    local group_def = inv_defs[group]
+    if not group_def or not group_def.is_player then return nil end
 
-    for _, entry in pairs(raw_items or {}) do
-        local def = item_defs[entry.id]
-        if def then
-            items[#items + 1] = {
-                id = entry.id,
-                image = core.convars.image_path .. (entry.image or def.image),
-                label = def.label,
-                col = entry.col,
-                row = entry.row,
-                w = entry.w or def.w or 1,
-                h = entry.h or def.h or 1,
-                quantity = entry.quantity or 1,
-                category = def.category,
-                dataset = { col = entry.col, row = entry.row, group_id = group_id },
-                on_hover = {
-                    title = def.label or entry.id,
-                    description = type(def.description) == "string" and { def.description } or (def.description or {})
-                }
-            }
-        end
+    local quantity = tonumber(entry and entry.quantity) or 1
+    local actions = {}
+
+    if def.actions.use then
+        actions[#actions + 1] = {
+            id = "use",
+            key = "G",
+            label = "Use",
+            should_close = true,
+            on_action = function(data)
+                TriggerServerEvent("rig:sv:use_item", { col = data.dataset.col, row = data.dataset.row, group = data.dataset.group_id })
+                TriggerServerEvent("rig:sv:close_inventory")
+                inventory_open = false
+            end
+        }
     end
 
-    return items
+    local stackable = def.stackable
+    if stackable == nil then stackable = true end
+
+    if stackable ~= false and quantity > 1 then
+        actions[#actions + 1] = {
+            id = "split",
+            key = "S",
+            label = "Split Stack",
+            modal = {
+                title = "Split Stack",
+                options = {
+                    {
+                        id = "quantity",
+                        label = "Quantity",
+                        type = "number",
+                        default = 1,
+                        min = 1,
+                        max = quantity - 1,
+                        dataset = { col = col, row = row, group_id = group }
+                    }
+                },
+                buttons = {
+                    {
+                        label = "Confirm",
+                        on_action = function(data)
+                            local amt = tonumber(data.dataset.quantity)
+                            local c = tonumber(data.dataset.col)
+                            local r = tonumber(data.dataset.row)
+                            local group_id = data.dataset.group_id
+                            if amt and c and r and group_id then
+                                TriggerServerEvent("rig:sv:split_item", { col = c, row = r, group = group_id, quantity = amt })
+                            end
+                        end
+                    },
+                    { label = "Cancel", action = "close_modal" }
+                }
+            }
+        }
+    end
+    return (#actions > 0) and actions or nil
+end
+
+local function resolve_meta_value(meta_def, meta_value)
+    if not meta_def.display then return nil end
+    if type(meta_value) == "table" and not meta_def.values then return nil end
+
+    if meta_def.values then
+        if type(meta_value) == "table" then
+            local labels = {}
+            for _, v in ipairs(meta_value) do
+                local mapped = meta_def.values[tostring(v)]
+                labels[#labels + 1] = mapped and mapped.label or tostring(v)
+            end
+            return #labels > 0 and table.concat(labels, ", ") or nil
+        end
+        local mapped = meta_def.values[tostring(meta_value)]
+        return mapped and mapped.label or tostring(meta_value)
+    end
+
+    return tostring(meta_value) .. (meta_def.suffix or "")
 end
 
 local function build_player_groups(player_data)
@@ -264,7 +270,7 @@ local function build_player_groups(player_data)
                 layout = { columns = def.columns or 10, rows = def.rows or 4, cell_size = "3vw" },
                 collapsible = def.collapsible or false,
                 collapsed = def.collapsed or false,
-                items = build_items_for_grid(raw_items, group_id)
+                items = m.build_items_for_grid(raw_items, group_id)
             }
         end
     end
@@ -284,7 +290,7 @@ local function build_vicinity_items(drops, radius)
             local h = drop.h or 1
             items[#items + 1] = {
                 id = drop.item_id,
-                image = core.convars.image_path .. drop.image,
+                image = core.settings.general.image_path .. drop.image,
                 label = drop.label or drop.item_id,
                 col = col,
                 row = row,
@@ -316,9 +322,57 @@ local function build_right()
     }
 end
 
+--- @section Grid Items
+
+function m.build_items_for_grid(raw_items, group_id)
+    local items = {}
+
+    for _, entry in pairs(raw_items or {}) do
+        local def = item_defs[entry.id]
+        if def then
+            local values = {}
+            local progress = nil
+
+            for meta_key, meta_value in pairs(entry.metadata or {}) do
+                local meta_def = metadata_defs[meta_key]
+                if meta_def then
+                    if meta_key == "durability" then progress = { value = meta_value } end
+                    local display = resolve_meta_value(meta_def, meta_value)
+                    if display then values[#values + 1] = { key = meta_def.label, value = display } end
+                end
+            end
+
+            local description = type(def.description) == "string" and { def.description } or def.description
+
+            items[#items + 1] = {
+                id = entry.id,
+                image = core.settings.general.image_path .. (def.image or "default.png"),
+                label = def.label,
+                col = entry.col,
+                row = entry.row,
+                w = entry.w or def.w or 1,
+                h = entry.h or def.h or 1,
+                quantity = entry.quantity or 1,
+                category = def.category,
+                progress = progress,
+                dataset = { col = entry.col, row = entry.row, group_id = group_id },
+                on_hover = {
+                    title = def.label or entry.id,
+                    description = description or {},
+                    values = (#values > 0) and values or nil,
+                    rarity = (entry.metadata and entry.metadata.rarity) or (def.metadata and def.metadata.rarity) or "common",
+                    actions = build_item_actions(def, entry.col, entry.row, entry, group_id)
+                }
+            }
+        end
+    end
+
+    return items
+end
+
 --- @section Build
 
-local function build_inventory(player_data)
+function m.build(player_data)
     local groups = build_player_groups(player_data)
     local header = build_header()
 
@@ -340,10 +394,10 @@ local function build_inventory(player_data)
                 inventory_page = {
                     index = 1,
                     title = "Inventory",
-                    layout = { left = 3, spacer2 = 1, center = 4, spacer3 = 1, right = 3 },
+                    layout = { left = 3, center = 2, spacer3 = 4, right = 3 },
                     left = {
                         type = "grid",
-                        title = { text = "Equipment" },
+                        title = { text = "Inventories" },
                         layout = { scroll_x = "none", scroll_y = "scroll" },
                         groups = groups
                     },
@@ -356,28 +410,4 @@ local function build_inventory(player_data)
     })
 end
 
---- @section Events
-
-RegisterNetEvent("rig_inventory:client:open_inventory", function(player_data)
-    if type(player_data) ~= "table" then return end
-    inventory_open = true
-    start_ped_preview()
-    build_inventory(player_data)
-end)
-
-RegisterNetEvent("rig_inventory:client:close_inventory", function()
-    inventory_open = false
-    stop_ped_preview()
-    TriggerEvent("rig_inventory:client:close_ui")
-    FreezeEntityPosition(PlayerPedId(), false)
-end)
-
---- @section Commands
-
-RegisterCommand("inv:open", function()
-    if IsNuiFocused() or IsPauseMenuActive() then return end
-
-    ExecuteCommand("_open_inventory")
-end, false)
-
-RegisterKeyMapping("inv:open", "Open Inventory", "keyboard", "TAB")
+return m

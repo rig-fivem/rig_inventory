@@ -125,7 +125,6 @@ export class InventoryGrid {
             window.ui_instance?.tooltip?.hide?.();
         };
 
-        // Temporarily disables pointer-events on overlay item layers so elementFromPoint can see what's underneath.
         const with_layers_passthrough = (x, y) => {
             const layers = document.querySelectorAll(".grid_items");
             layers.forEach(l => (l.style.pointerEvents = "none"));
@@ -147,7 +146,6 @@ export class InventoryGrid {
             };
         };
 
-        // @added: fallback lookup for a slot-based drop target (e.g. Hotbar) when no grid cell is under the cursor.
         const get_slot_at = (x, y) => {
             const under = with_layers_passthrough(x, y);
             if (!under) return null;
@@ -222,7 +220,6 @@ export class InventoryGrid {
                     return;
                 }
 
-                // @added: dropped outside any grid cell — check whether it landed on a slot-based target instead.
                 const slot = get_slot_at(e.clientX, e.clientY);
                 if (slot && typeof d.on_drop_to_slot === "function") {
                     await d.on_drop_to_slot(

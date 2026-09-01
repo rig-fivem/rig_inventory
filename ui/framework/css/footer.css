@@ -14,10 +14,6 @@ License: https://github.com/rig-fivem/rig/blob/main/LICENSE
     right: 2vw;
     width: auto;
     height: auto;
-    background: var(--background_main);
-    border: 0.1vh solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--border_radius_outer);
-    box-shadow: 0 0.8vh 2vh rgba(0, 0, 0, 0.35);
     color: var(--text_primary);
     font-family: var(--text_font);
     z-index: 11;
@@ -79,7 +75,7 @@ License: https://github.com/rig-fivem/rig/blob/main/LICENSE
     justify-content: center;
     color: var(--accent);
     white-space: nowrap;
-    font-size: 0.65rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
     font-weight: bold;
     letter-spacing: 0.05rem;
@@ -87,19 +83,21 @@ License: https://github.com/rig-fivem/rig/blob/main/LICENSE
 }
 
 .footer_label {
-    font-size: 0.68rem;
+    font-size: 0.85rem;
     color: var(--text_secondary);
     text-transform: uppercase;
     letter-spacing: 0.06rem;
+    text-shadow: var(--text_shadow_soft);
 }
 
 .footer_text {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     color: var(--text_secondary);
     display: flex;
     align-items: center;
     letter-spacing: 0.05rem;
     text-transform: uppercase;
+    text-shadow: var(--text_shadow_soft);
 }
 
 .footer_button_group {

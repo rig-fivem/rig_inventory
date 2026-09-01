@@ -36,7 +36,7 @@ export async function send_nui_callback(action, dataset = {}, additional = {}) {
 
 export function resolve_image_path(image, base = "/ui/assets/images/") {
     if (!image || typeof image !== "string") return "";
-    if (/^(gui:\/\/|https?:\/\/)/i.test(image)) return image;
+    if (/^(nui:\/\/|https?:\/\/)/i.test(image)) return image;
     if (/^\//.test(image)) return image;
     return base + image;
 }

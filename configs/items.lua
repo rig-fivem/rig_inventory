@@ -24,7 +24,7 @@ return {
         image = "water.png",
         weight = 330,
         w = 1,
-        h = 2,
+        h = 1,
         metadata = {
             rarity = "common",
             quality = 100,

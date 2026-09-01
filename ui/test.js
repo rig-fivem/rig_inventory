@@ -106,7 +106,7 @@ const inventory_slots_page = {
                 items: {
                     "1": {
                         id: "ammo_9mm",
-                        image: "/ui/assets/images/items/ammo_9mm.png",
+                        image: "/images/ammo_9mm.png",
                         quantity: 50,
                         category: "ammunition",
                         on_hover: {
@@ -126,7 +126,7 @@ const inventory_slots_page = {
                     },
                     "2": {
                         id: "pistol_mag_extended",
-                        image: "/ui/assets/images/items/pistol_mag_extended.png",
+                        image: "/images/pistol_mag_extended.png",
                         quantity: 2,
                         category: "magazine",
                         on_hover: {
@@ -152,7 +152,7 @@ const inventory_slots_page = {
                 items: {
                     "1": {
                         id: "cabbage",
-                        image: "/ui/assets/images/items/cabbage.png",
+                        image: "/images/cabbage.png",
                         quantity: 5,
                         category: "food",
                         on_hover: {
@@ -172,7 +172,7 @@ const inventory_slots_page = {
                     },
                     "2": {
                         id: "corn",
-                        image: "/ui/assets/images/items/corn.png",
+                        image: "/images/corn.png",
                         quantity: 8,
                         category: "food",
                         on_hover: {
@@ -198,7 +198,7 @@ const inventory_slots_page = {
                 items: {
                     "1": {
                         id: "weapon_pistol",
-                        image: "/ui/assets/images/items/weapon_pistol.png",
+                        image: "/images/weapon_pistol.png",
                         quantity: 1,
                         category: "weapon",
                         progress: { value: 72 },
@@ -226,7 +226,7 @@ const inventory_slots_page = {
                 items: {
                     "1": {
                         id: "weed",
-                        image: "/ui/assets/images/items/weed.png",
+                        image: "/images/weed.png",
                         quantity: 3,
                         category: "plant",
                         on_hover: {
@@ -257,7 +257,7 @@ const inventory_slots_page = {
         items: {
             "1": {
                 id: "weapon_pistol",
-                image: "/ui/assets/images/items/weapon_pistol.png",
+                image: "/images/weapon_pistol.png",
                 quantity: 1,
                 category: "weapon",
                 progress: { value: 55 },
@@ -276,7 +276,7 @@ const inventory_slots_page = {
             },
             "2": {
                 id: "ammo_9mm",
-                image: "/ui/assets/images/items/ammo_9mm.png",
+                image: "/images/ammo_9mm.png",
                 quantity: 48,
                 category: "ammunition",
                 on_hover: {
@@ -293,7 +293,7 @@ const inventory_slots_page = {
             },
             "3": {
                 id: "cabbage",
-                image: "/ui/assets/images/items/cabbage.png",
+                image: "/images/cabbage.png",
                 quantity: 3,
                 category: "food",
                 on_hover: {
@@ -316,15 +316,15 @@ const inventory_grid_page = {
     index: 1,
     title: "Inventory",
     layout: { 
-        left: 3,
-        spacer2: 1, 
-        center: 4,
-        spacer3: 1,
+        left: 3, 
+        center: 2,
+        spacer3: 4,
         right: 3 
     },
 
     center: {
         type: "slots",
+        title: { text: "Loadout" },
         layout: { scroll_y: "none", scroll_x: "none" },
         allow_cross_group_swap: true,
         groups: [{
@@ -332,16 +332,16 @@ const inventory_grid_page = {
             layout_type: "positioned",
             collapsible: false,
             slots: [
-                { id: "helmet", label: "Helmet", position: { top: "0%", left: "0%" }, size: "64px" },
-                { id: "mask", label: "Mask", position: { top: "0%", right: "0%" }, size: "64px" },
-                { id: "backpack", label: "Bag", position: { top: "22%", left: "0%" }, size: "64px" },
-                { id: "primary", label: "Sling 1",  position: { top: "22%", right: "0%" }, size: "64px" },
-                { id: "vest", label: "Vest", position: { top: "44%", left: "0%" }, size: "64px" },
-                { id: "secondary", label: "Sling 2", position: { top: "44%", right: "0%" }, size: "64px" },
-                { id: "shirt", label: "Shirt", position: { top: "66%", left: "0%" }, size: "64px" },
-                { id: "melee", label: "Melee", position: { top: "66%", right: "0%" }, size: "64px" },
-                { id: "pants", label: "Pants", position: { top: "86%", left: "0%" }, size: "64px" },
-                { id: "shoes", label: "Shoes", position: { top: "86%", right: "0%" }, size: "64px" }
+                { id: "helmet", label: "Helmet", position: { top: "0%", left: "0%" }, size: "72px" },
+                { id: "mask", label: "Mask", position: { top: "0%", left: "30%" }, size: "72px" },
+                { id: "bag", label: "Bag", position: { top: "22%", left: "0%" }, size: "72px" },
+                { id: "primary", label: "Sling 1",  position: { top: "22%", left: "30%" }, size: "72px" },
+                { id: "vest", label: "Vest", position: { top: "44%", left: "0%" }, size: "72px" },
+                { id: "secondary", label: "Sling 2", position: { top: "44%", left: "30%" }, size: "72px" },
+                { id: "shirt", label: "Shirt", position: { top: "66%", left: "0%" }, size: "72px" },
+                { id: "melee", label: "Melee", position: { top: "66%", left: "30%" }, size: "72px" },
+                { id: "pants", label: "Pants", position: { top: "85%", left: "0%" }, size: "72px" },
+                { id: "shoes", label: "Shoes", position: { top: "85%", left: "30%" }, size: "72px" }
             ],
             items: {}
         }]
@@ -349,7 +349,7 @@ const inventory_grid_page = {
 
     left: {
         type: "grid",
-        title: { text: "Equipment", span: `<i class="fa-solid fa-weight-hanging"></i> 45/120` },
+        title: { text: "Inventories", span: `<i class="fa-solid fa-weight-hanging"></i> 45/120` },
         layout: { scroll_x: "none", scroll_y: "scroll" },
         groups: [
             {
@@ -362,7 +362,7 @@ const inventory_grid_page = {
                 items: [
                     {
                         id: "ammo_9mm",
-                        image: "/ui/assets/images/items/ammo_9mm.png",
+                        image: "/images/ammo_9mm.png",
                         label: "9mm",
                         col: 1, row: 1, w: 1, h: 1,
                         quantity: 50,
@@ -383,7 +383,7 @@ const inventory_grid_page = {
                     },
                     {
                         id: "pistol_mag_extended",
-                        image: "/ui/assets/images/items/pistol_mag_extended.png",
+                        image: "/images/pistol_mag_extended.png",
                         label: "Mag",
                         col: 2, row: 1, w: 1, h: 2,
                         quantity: 2,
@@ -405,7 +405,7 @@ const inventory_grid_page = {
                     },
                     {
                         id: "tomato",
-                        image: "/ui/assets/images/items/tomato.png",
+                        image: "/images/tomato.png",
                         label: "Tomato",
                         col: 3, row: 1, w: 1, h: 1,
                         quantity: 4,
@@ -436,7 +436,7 @@ const inventory_grid_page = {
                 items: [
                     {
                         id: "cabbage",
-                        image: "/ui/assets/images/items/cabbage.png",
+                        image: "/images/cabbage.png",
                         label: "Cabbage",
                         col: 1, row: 1, w: 2, h: 2,
                         quantity: 5,
@@ -457,7 +457,7 @@ const inventory_grid_page = {
                     },
                     {
                         id: "corn",
-                        image: "/ui/assets/images/items/corn.png",
+                        image: "/images/corn.png",
                         label: "Corn",
                         col: 3, row: 1, w: 1, h: 2,
                         quantity: 8,
@@ -478,7 +478,7 @@ const inventory_grid_page = {
                     },
                     {
                         id: "water_bottle",
-                        image: "/ui/assets/images/items/water.png",
+                        image: "/images/water.png",
                         label: "Water",
                         col: 4, row: 1, w: 1, h: 2,
                         quantity: 2,
@@ -499,7 +499,7 @@ const inventory_grid_page = {
                     },
                     {
                         id: "weapon_pistol",
-                        image: "/ui/assets/images/items/weapon_pistol.png",
+                        image: "/images/weapon_pistol.png",
                         label: "Pistol",
                         col: 1, row: 3, w: 3, h: 2,
                         quantity: 1,
@@ -532,7 +532,7 @@ const inventory_grid_page = {
                 items: [
                     {
                         id: "weed",
-                        image: "/ui/assets/images/items/weed.png",
+                        image: "/images/weed.png",
                         label: "Weed",
                         col: 1, row: 1, w: 1, h: 1,
                         quantity: 3,
@@ -553,7 +553,7 @@ const inventory_grid_page = {
                     },
                     {
                         id: "cash",
-                        image: "/ui/assets/images/items/cash.png",
+                        image: "/images/cash.png",
                         label: "cash",
                         col: 2, row: 1, w: 1, h: 1,
                         quantity: 1,
@@ -584,7 +584,7 @@ const inventory_grid_page = {
         items: [
             {
                 id: "weapon_pistol_ground",
-                image: "/ui/assets/images/items/weapon_pistol.png",
+                image: "/images/weapon_pistol.png",
                 label: "Pistol",
                 col: 1, row: 1, w: 3, h: 2,
                 quantity: 1,
@@ -604,7 +604,7 @@ const inventory_grid_page = {
             },
             {
                 id: "ammo_9mm_ground",
-                image: "/ui/assets/images/items/ammo_9mm.png",
+                image: "/images/ammo_9mm.png",
                 label: "9mm",
                 col: 4, row: 1, w: 1, h: 1,
                 quantity: 48,
@@ -622,7 +622,7 @@ const inventory_grid_page = {
             },
             {
                 id: "cabbage_ground",
-                image: "/ui/assets/images/items/cabbage.png",
+                image: "/images/cabbage.png",
                 label: "Cabbage",
                 col: 5, row: 1, w: 2, h: 2,
                 quantity: 3,
@@ -750,7 +750,7 @@ const hotbar_config = {
     items: {
         "1": {
             id: "weapon_pistol",
-            image: "/ui/assets/images/items/weapon_pistol.png",
+            image: "/images/weapon_pistol.png",
             quantity: 1,
             category: "weapon",
             progress: { value: 72 },
@@ -772,7 +772,7 @@ const hotbar_config = {
         },
         "2": {
             id: "tomato",
-            image: "/ui/assets/images/items/tomato.png",
+            image: "/images/tomato.png",
             quantity: 4,
             category: "medical",
             on_hover: {
@@ -792,10 +792,10 @@ const test_popup = new InventorySlot({ position: 'bottom-center' });
 
 window.test_slot_popup = () => {
     const test_items = [
-        { item_id: "water", image: "/ui/assets/images/items/water.png", quantity: 5, action: "added", rarity: "common" },
-        { item_id: "weapon_pistol", image: "/ui/assets/images/items/weapon_pistol.png", quantity: 1, action: "added", rarity: "rare" },
-        { item_id: "cash", image: "/ui/assets/images/items/cash.png", quantity: 100, action: "removed", rarity: "uncommon" },
-        { item_id: "ammo_9mm", image: "/ui/assets/images/items/ammo_9mm.png", quantity: 50, action: "added", rarity: "legendary" }
+        { item_id: "water", image: "/images/water.png", quantity: 5, action: "added", rarity: "common" },
+        { item_id: "weapon_pistol", image: "/images/weapon_pistol.png", quantity: 1, action: "added", rarity: "rare" },
+        { item_id: "cash", image: "/images/cash.png", quantity: 100, action: "removed", rarity: "uncommon" },
+        { item_id: "ammo_9mm", image: "/images/ammo_9mm.png", quantity: 50, action: "added", rarity: "legendary" }
     ];
 
     let delay = 0;

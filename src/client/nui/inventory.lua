@@ -189,8 +189,8 @@ local function build_item_actions(def, col, row, entry, group)
             label = "Use",
             should_close = true,
             on_action = function(data)
-                TriggerServerEvent("rig:sv:use_item", { col = data.dataset.col, row = data.dataset.row, group = data.dataset.group_id })
-                TriggerServerEvent("rig:sv:close_inventory")
+                TriggerServerEvent("rig_inventory:server:use_item", { col = data.dataset.col, row = data.dataset.row, group = data.dataset.group_id })
+                TriggerServerEvent("rig_inventory:sv:close_inventory")
                 inventory_open = false
             end
         }

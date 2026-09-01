@@ -13,6 +13,49 @@ local starter_items = {
     { id = "water", quantity = 8, col = 1, row = 1 }
 }
 
+--- @section Usable Items
+
+local function handle_item_use(source, item_id, def, col, row, group)
+    local use_config = def.actions.use
+
+    if type(use_config) == "function" then
+        return use_config(source, col, row, group)
+    end
+
+    if type(use_config) ~= "table" then return end
+
+    if use_config.attachments then
+        log("info", ("[handle_item_use] attachments use: item=%s col=%s row=%s group=%s"):format(item_id, col, row, group))
+        return
+    end
+
+    if use_config.animation then
+        log("info", ("[handle_item_use] animation use: item=%s col=%s row=%s group=%s"):format(item_id, col, row, group))
+        return
+    end
+end
+
+local function register_usable_items()
+    local count = 0
+
+    for id, def in pairs(_items) do
+        if def.actions and def.actions.use then
+            exports.rig:register_hook(id, function(source, col, row, group)
+                handle_item_use(source, id, def, col, row, group)
+            end)
+            log("success", "Usable item registered: " .. id)
+            count = count + 1
+        end
+    end
+
+    log("success", "Registered Items: " .. count)
+    return count
+end
+
+SetTimeout(500, function()
+    register_usable_items()
+end)
+
 --- @section RIG Events
 
 AddEventHandler("rig:server:player_loaded", function(source)
@@ -54,6 +97,15 @@ RegisterServerEvent("rig_inventory:server:move_item", function(data)
     print("move_item data: ", json.encode(data))
 
     _actions.move_item(_src, data)
+end)
+
+RegisterServerEvent("rig_inventory:server:use_item", function(data)
+    local _src = source
+
+    print("use_item source: ", source)
+    print("use_item data: ", json.encode(data))
+
+    _actions.use_item(_src, data)
 end)
 
 --- @section Commands

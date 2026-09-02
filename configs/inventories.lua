@@ -20,7 +20,7 @@ return {
         icon = "fa-solid fa-hand",
         is_player = true,
         columns = 10,
-        rows = 2,
+        rows = 3,
         max_weight = 20000,
         collapsible = true,
         collapsed = false,

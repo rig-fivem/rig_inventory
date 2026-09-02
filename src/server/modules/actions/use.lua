@@ -35,6 +35,8 @@ local function handle_weapon_use(source, col, row, item, def, group)
         inv_meta.equipped_weapon = nil
         exports.rig:set_inventory_metadata(source, inv_meta, false)
         _utils.sync_and_refresh(source)
+
+        TriggerEvent("rig_inventory:server:weapon_state_changed", source, false, nil)
         return true
     end
 
@@ -67,6 +69,8 @@ local function handle_weapon_use(source, col, row, item, def, group)
     inv_meta.equipped_weapon = { col = col, row = row, group = group, id = item.id, serial = item.metadata.serial }
     exports.rig:set_inventory_metadata(source, inv_meta, false)
     _utils.sync_and_refresh(source)
+
+    TriggerEvent("rig_inventory:server:weapon_state_changed", source, true, item)
     return true
 end
 

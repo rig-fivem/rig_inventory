@@ -126,7 +126,7 @@ return {
         description = "9mm semi-automatic pistol",
         image = "weapon_pistol.png",
         weight = 710,
-        w = 1,
+        w = 2,
         h = 2,
         stackable = false,
         category = "weapon",

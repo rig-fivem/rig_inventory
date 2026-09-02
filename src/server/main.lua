@@ -22,7 +22,11 @@ local Drops = require("src.server.registry.drops")
 
 -- @todo move to config
 local starter_items = {
-    { id = "water", quantity = 8, col = 1, row = 1 }
+    { id = "water", quantity = 8, col = 1, row = 1 },
+    { id = "ammo_9mm", quantity = 50, col = 9, row = 1 },
+    { id = "pistol_mag_extended", quantity = 1, col = 8, row = 1 },
+    { id = "weapon_pistol", quantity = 1, col = 1, row = 2 },
+    { id = "dufflebag", quantity = 1, col = 3, row = 2 }
 }
 
 --- @section Registries

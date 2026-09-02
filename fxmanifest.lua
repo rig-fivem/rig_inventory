@@ -29,12 +29,14 @@ shared_scripts {
     "init.lua"
 }
 client_scripts {
+    "src/client/registry/*.lua",
     "src/client/modules/*.lua",
     "src/client/nui/*.lua",
     "src/client/main.lua"
 }
 server_scripts {
-    "src/server/modules/*.lua",
+    "src/server/registry/*.lua",
+    "src/server/modules/**/*.lua",
     "src/server/main.lua"
 }
 

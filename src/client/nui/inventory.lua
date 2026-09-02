@@ -1,4 +1,14 @@
---- @module nui.inventory
+--[[
+----------------------------------------
+RIG Inventory (built for RIG-FiveM)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig_inventory
+License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
+----------------------------------------
+]]
+
+--- @module inventory
 --- @file src.client.nui.inventory
 --- @description Handles client-side inventory UI building.
 
@@ -277,7 +287,24 @@ local function build_player_groups(player_data)
     return groups
 end
 
-local function build_vicinity_items(drops, radius)
+local function build_right()
+    local client_drops = core.client_drops and core.client_drops.drops or {}
+    local vicinity_items = m.build_vicinity_items(client_drops, 2.5)
+    return {
+        type = "grid",
+        section_key = "vicinity",
+        title = {
+            text = "Vicinity",
+            span = '<i class="fa-solid fa-location-dot"></i> ' .. "Ground"
+        },
+        layout = { scroll_x = "none", scroll_y = "scroll", columns = 10, rows = 20, cell_size = "3vw" },
+        items = vicinity_items
+    }
+end
+
+--- @section Vicinity Items
+
+function m.build_vicinity_items(drops, radius)
     local items = {}
     local ped = PlayerPedId()
     local pcoords = GetEntityCoords(ped)
@@ -286,6 +313,19 @@ local function build_vicinity_items(drops, radius)
     for _, drop in pairs(drops or {}) do
         local dcoords = vector3(drop.coords.x, drop.coords.y, drop.coords.z)
         if #(pcoords - dcoords) <= radius then
+            local def = item_defs[drop.item_id]
+            local values = {}
+
+            for meta_key, meta_value in pairs(drop.metadata or {}) do
+                local meta_def = metadata_defs[meta_key]
+                if meta_def then
+                    local display = resolve_meta_value(meta_def, meta_value)
+                    if display then values[#values + 1] = { key = meta_def.label, value = display } end
+                end
+            end
+
+            local description = type(drop.description) == "string" and { drop.description } or drop.description
+
             local w = drop.w or 1
             local h = drop.h or 1
             items[#items + 1] = {
@@ -298,7 +338,13 @@ local function build_vicinity_items(drops, radius)
                 h = h,
                 quantity = drop.quantity,
                 category = drop.category,
-                dataset = { drop_id = drop.id }
+                dataset = { drop_id = drop.id },
+                on_hover = {
+                    title = drop.label or drop.item_id,
+                    description = description or {},
+                    values = (#values > 0) and values or nil,
+                    rarity = (drop.metadata and drop.metadata.rarity) or (def and def.metadata and def.metadata.rarity) or "common"
+                }
             }
             col = col + w
             if col > 10 then col = 1 row = row + 1 end
@@ -306,20 +352,6 @@ local function build_vicinity_items(drops, radius)
     end
 
     return items
-end
-
-local function build_right()
-    local vicinity_items = build_vicinity_items(client_drops, 2.5)
-    return {
-        type = "grid",
-        section_key = "vicinity",
-        title = {
-            text = "Vicinity",
-            span = '<i class="fa-solid fa-location-dot"></i> ' .. "Ground"
-        },
-        layout = { scroll_x = "none", scroll_y = "scroll", columns = 10, rows = 20, cell_size = "3vw" },
-        items = vicinity_items
-    }
 end
 
 --- @section Grid Items

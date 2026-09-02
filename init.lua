@@ -8,7 +8,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 ----------------------------------------
 ]]
 
---- @file src/init.lua
+--- @file init.lua
 --- @description Main initialisation file.
 --- Handles namespace, settings and some global functions.
 

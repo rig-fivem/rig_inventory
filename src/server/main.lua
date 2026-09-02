@@ -1,3 +1,13 @@
+--[[
+----------------------------------------
+RIG Inventory (built for RIG-FiveM)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig_inventory
+License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
+----------------------------------------
+]]
+
 --- @file src/server/main.lua
 --- @description Handles main server side stuff
 
@@ -6,12 +16,18 @@
 local _items = require("configs.items")
 local _actions = require("src.server.modules.actions")
 
+local Drops = require("src.server.registry.drops")
+
 --- @section Variables
 
 -- @todo move to config
 local starter_items = {
     { id = "water", quantity = 8, col = 1, row = 1 }
 }
+
+--- @section Registries
+
+core.drops = Drops.new()
 
 --- @section Usable Items
 

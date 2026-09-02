@@ -1,7 +1,16 @@
+--[[
+----------------------------------------
+RIG Inventory (built for RIG-FiveM)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig_inventory
+License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
+----------------------------------------
+]]
+
 --- @module nui
 --- @file src/client/modules/nui.lua
 --- @description Handles core NUI stuff; notifications, modals, ui framework etc.
-
 
 --- @section Guard
 

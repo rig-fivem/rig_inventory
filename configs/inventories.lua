@@ -1,16 +1,11 @@
 --[[
---------------------------------------------------
+----------------------------------------
+RIG Inventory (built for RIG-FiveM)
 
-This file is part of RIG.
-Please retain this header in all files.
-Support honest open source development.
-
-Author: Case @ BOII Development
-Website: https://boii.dev
-GitHub: https://github.com/rig-framework/rig
-License: LGPL-3.0
-
---------------------------------------------------
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig_inventory
+License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
+----------------------------------------
 ]]
 
 --- @module configs.inventories

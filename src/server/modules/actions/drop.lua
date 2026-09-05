@@ -39,7 +39,7 @@ function m.drop_item(source, data)
     local quantity = math.min(tonumber(data.quantity) or item.quantity or 1, item.quantity or 1)
     if quantity <= 0 then return log("warn", "[drop_item] zero quantity") end
 
-    local model = type(def.actions.drop) == "table" and def.actions.drop.model or def.model or def.prop or "prop_paper_bag_small"
+    local model = type(def.actions.drop) == "table" and def.actions.drop.model or def.model or "prop_paper_bag_small"
 
     local ped = GetPlayerPed(source)
     if not ped or ped == 0 then return log("error", "[drop_item] no ped") end

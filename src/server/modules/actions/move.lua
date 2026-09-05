@@ -10,7 +10,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @module actions.move
 --- @file src/server/modules/actions/move.lua
---- @description Handles item move/swap actions.
+--- @description Handles item move/swap actions
 
 --- @section Imports
 
@@ -32,6 +32,109 @@ end
 local function is_player_group(group_id)
     local def = _inventories[group_id]
     return def and def.is_player == true
+end
+
+local function parse_vehicle_group(group_id)
+    local inv_type, plate = group_id:match("^vehicle:([^:]+):(.+)$")
+    return inv_type ~= nil, inv_type, plate
+end
+
+--- @section Adapters
+
+local function player_adapter(source)
+    return {
+        kind = "player",
+        key = "player:" .. source,
+        container = nil,
+        get_item = function(col, row, group)
+            return _utils.get_item(source, col, row, group)
+        end,
+        remove_item = function(col, row, group, qty)
+            return _utils.remove_item(source, col, row, group, qty)
+        end,
+        place_item = function(group, col, row, item)
+            return _utils.place_item(source, group, col, row, item)
+        end,
+    }
+end
+
+local function container_adapter(container)
+    return {
+        kind = "container",
+        key = "container:" .. container.identifier,
+        container = container,
+        get_item = function(col, row, group)
+            return container:get_item({ col = col, row = row }, 1, group)
+        end,
+        remove_item = function(col, row, group, qty)
+            return container:remove_item({ col = col, row = row }, qty, group)
+        end,
+        place_item = function(group, col, row, item)
+            return container:place_item(group, col, row, item)
+        end,
+    }
+end
+
+local function resolve_side(source, group, is_vehicle, vehicle_inv_type, vehicle_plate)
+    if is_vehicle then
+        local container = core.containers:get(("vehicle:%s:%s"):format(vehicle_inv_type, vehicle_plate))
+            or core.containers:get_or_create_vehicle(vehicle_plate, vehicle_inv_type)
+        if not container then return nil, "vehicle_container_missing" end
+        return container_adapter(container)
+    end
+
+    if is_player_group(group) then
+        return player_adapter(source)
+    end
+
+    local container_id = core.containers:get_locked_by_player(source)
+    if not container_id then return nil, "no_locked_container" end
+
+    local container = core.containers:get(container_id)
+    if not container then return nil, "locked_container_missing" end
+
+    return container_adapter(container)
+end
+
+--- @section Generic Move
+
+local function perform_move(from_side, from_col, from_row, from_group, to_side, to_col, to_row, to_group)
+    if from_side.key == to_side.key and from_col == to_col and from_row == to_row and from_group == to_group then
+        return false, "item_move_same_slot"
+    end
+
+    local source_item = from_side.get_item(from_col, from_row, from_group)
+    if not source_item then return false, "source_item_missing" end
+
+    local move_payload = {
+        id = source_item.id,
+        quantity = source_item.quantity or 1,
+        metadata = source_item.metadata,
+        w = source_item.w,
+        h = source_item.h
+    }
+
+    local removed = from_side.remove_item(from_col, from_row, from_group, move_payload.quantity)
+    if not removed then return false, "source_remove_failed" end
+
+    local placed, place_msg, displaced = to_side.place_item(to_group, to_col, to_row, move_payload)
+
+    if not placed then
+        from_side.place_item(from_group, from_col, from_row, move_payload)
+        return false, place_msg or "destination_place_failed"
+    end
+
+    if displaced then
+        local restored = from_side.place_item(from_group, from_col, from_row, {
+            id = displaced.id, quantity = displaced.quantity, metadata = displaced.metadata,
+            w = displaced.w, h = displaced.h
+        })
+        if not restored then
+            log("error", ("[move_item] displaced item lost during swap: %s"):format(json.encode(displaced)))
+        end
+    end
+
+    return true, place_msg
 end
 
 --- @section Move Item
@@ -63,52 +166,31 @@ function m.move_item(source, move_data)
         return
     end
 
-    local from_is_player = is_player_group(from_group)
-    local to_is_player = is_player_group(to_group)
+    local from_is_vehicle, from_inv_type, from_plate = parse_vehicle_group(from_group)
+    local to_is_vehicle, to_inv_type, to_plate = parse_vehicle_group(to_group)
 
-    if from_is_player and to_is_player then
-        local inv_data = exports.rig:get_inventory(source)
-        if not inv_data or not inv_data.items then
-            return log("error", "[move_item] no player inventory data")
-        end
-
-        local from_key = from_col .. "_" .. from_row
-        local to_key = to_col .. "_" .. to_row
-
-        local from_items = inv_data.items[from_group]
-        local to_items = inv_data.items[to_group]
-
-        local source_item = from_items and from_items[from_key]
-        if not source_item then
-            return log("warn", "[move_item] source item missing")
-        end
-
-        local target_item = to_items and to_items[to_key]
-
-        source_item.col = to_col
-        source_item.row = to_row
-
-        local changes = {
-            { group_id = from_group, key = from_key, item = target_item },
-            { group_id = to_group, key = to_key, item = source_item }
-        }
-
-        if target_item then
-            target_item.col = from_col
-            target_item.row = from_row
-        end
-
-        local success = exports.rig:set_inventory_slots(source, changes)
-        if success then
-            _utils.sync_and_refresh(source)
-            log("success", "[move_item] player -> player ok")
-        else
-            log("warn", "[move_item] player move failed")
-        end
-        return
+    local from_side, from_err = resolve_side(source, from_group, from_is_vehicle, from_inv_type, from_plate)
+    if not from_side then
+        return log("error", ("[move_item] could not resolve source side (%s): %s"):format(from_group, from_err))
     end
 
-    log("error", "[move_item] unhandled move case")
+    local to_side, to_err = resolve_side(source, to_group, to_is_vehicle, to_inv_type, to_plate)
+    if not to_side then
+        return log("error", ("[move_item] could not resolve destination side (%s): %s"):format(to_group, to_err))
+    end
+
+    local success, msg = perform_move(from_side, from_col, from_row, from_group, to_side, to_col, to_row, to_group)
+
+    if not success then
+        return log("warn", ("[move_item] src:%s %s -> %s failed: %s"):format(source, from_group, to_group, tostring(msg)))
+    end
+
+    if from_side.container then from_side.container:save() end
+    if to_side.container and to_side.container ~= from_side.container then to_side.container:save() end
+    
+    _utils.sync_and_refresh(source, to_side.container or from_side.container)
+
+    log("success", ("[move_item] src:%s %s -> %s ok (%s)"):format(source, from_group, to_group, tostring(msg)))
 end
 
 return m

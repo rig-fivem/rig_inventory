@@ -10,7 +10,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @module actions.use
 --- @file src/server/modules/actions/use.lua
---- @description Handles item use actions.
+--- @description Handles item use, loadout equipping/unequipping, and item animation callbacks.
 
 --- @section Imports
 
@@ -154,6 +154,200 @@ local function handle_attachment_use(source, col, row, item, def, group)
     return true
 end
 
+--- @section Player Inventory Actions
+
+function m.toggle_player_inventory(source, data)
+    if not source or not data then return log("error", "[toggle_player_inventory] missing args") end
+
+    local item = _utils.get_item(source, data.col, data.row, data.group)
+    if not item then
+        exports.rig:notify(source, { type = "error", header = "Inventory", message = "Item not found", duration = 3000 })
+        return log("warn", "[toggle_player_inventory] no item")
+    end
+
+    local def = _items[item.id]
+    if not def or not def.actions or not def.actions.use then
+        exports.rig:notify(source, { type = "error", header = "Inventory", message = "This item cannot be used", duration = 3000 })
+        return log("error", "[toggle_player_inventory] no definition: " .. item.id)
+    end
+
+    local use_config = def.actions.use
+    local inventory_group = use_config.inventory_group
+    local loadout_slot = use_config.loadout_slot
+
+    local inv_meta = _utils.get_inventory_metadata(source) or {}
+    inv_meta.equipped_inventories = inv_meta.equipped_inventories or {}
+    inv_meta.loadout = inv_meta.loadout or {}
+
+    local is_equipped = item.metadata and item.metadata.equipped == true
+
+    if is_equipped then
+        if loadout_slot then
+            inv_meta.loadout[loadout_slot] = nil
+        end
+
+        if inventory_group then
+            local group_contents = exports.rig:remove_inventory_group(source, inventory_group)
+            item.metadata.stored_items = group_contents
+        end
+
+        item.metadata.equipped = false
+
+        for i, equipped_inv in ipairs(inv_meta.equipped_inventories) do
+            if equipped_inv.group == (inventory_group or loadout_slot) and equipped_inv.serial == item.metadata.serial then
+                table.remove(inv_meta.equipped_inventories, i)
+                break
+            end
+        end
+
+        _utils.add_item(source, item.id, 1, data.group)
+
+        TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, { action = "remove", clothing = use_config.clothing, prop = use_config.prop })
+        exports.rig:set_inventory_metadata(source, inv_meta, false)
+        _utils.sync_and_refresh(source)
+        exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Unequipped %s"):format(def.label), duration = 4000 })
+        log("success", ("[toggle_player_inventory] unequipped %s from slot %s"):format(item.id, loadout_slot or inventory_group))
+    else
+        for _, equipped_inv in ipairs(inv_meta.equipped_inventories) do
+            local other_item = _utils.get_item(source, equipped_inv.col, equipped_inv.row, equipped_inv.source_group)
+            if other_item and other_item.metadata and other_item.metadata.serial ~= (item.metadata and item.metadata.serial or "") then
+                exports.rig:notify(source, { type = "error", header = "Inventory", message = "You already have one equipped!", duration = 4000 })
+                return log("warn", "[toggle_player_inventory] already equipped for src: " .. source)
+            end
+        end
+
+        if loadout_slot and inv_meta.loadout[loadout_slot] then
+            exports.rig:notify(source, { type = "error", header = "Inventory", message = "That slot is already occupied!", duration = 4000 })
+            return log("warn", "[toggle_player_inventory] loadout slot occupied: " .. loadout_slot)
+        end
+
+        item.metadata = item.metadata or {}
+        if not item.metadata.serial or item.metadata.serial == "" then
+            item.metadata.serial = ("%s_%s_%s"):format(item.id, source, os.time())
+        end
+
+        item.metadata.equipped = true
+        local stored_items = item.metadata.stored_items or {}
+
+        local removed = _utils.remove_item(source, data.col, data.row, data.group, 1)
+        if not removed then
+            exports.rig:notify(source, { type = "error", header = "Inventory", message = "Failed to equip item", duration = 3000 })
+            return log("error", "[toggle_player_inventory] failed to remove item from source")
+        end
+
+        if inventory_group then
+            local success = exports.rig:add_inventory_group(source, inventory_group, stored_items)
+            if not success then
+                _utils.add_item(source, item.id, 1, data.group)
+                exports.rig:notify(source, { type = "error", header = "Inventory", message = "Failed to add inventory", duration = 3000 })
+                return
+            end
+        end
+
+        if loadout_slot then
+            inv_meta.loadout[loadout_slot] = {
+                id = item.id,
+                label = def.label,
+                image = def.image,
+                category = def.category,
+                metadata = item.metadata,
+                serial = item.metadata.serial,
+                source_group = data.group,
+                inventory_group = inventory_group
+            }
+        end
+
+        table.insert(inv_meta.equipped_inventories, {
+            group = inventory_group or loadout_slot,
+            serial = item.metadata.serial,
+            col = data.col,
+            row = data.row,
+            source_group = data.group,
+            item_id = item.id
+        })
+
+        TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, { action = "equip", clothing = use_config.clothing, prop = use_config.prop })
+        exports.rig:set_inventory_metadata(source, inv_meta, false)
+        _utils.sync_and_refresh(source)
+        exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Equipped %s"):format(def.label), duration = 4000 })
+        log("success", ("[toggle_player_inventory] equipped %s to slot %s"):format(item.id, loadout_slot or inventory_group))
+    end
+end
+core.toggle_player_inventory = m.toggle_player_inventory
+
+function m.unequip_loadout_item(source, data)
+    if not data or not data.slot_id then return log("error", "[unequip_loadout_item] missing slot_id") end
+
+    local inv_meta = _utils.get_inventory_metadata(source) or {}
+    inv_meta.loadout = inv_meta.loadout or {}
+
+    local slot_entry = inv_meta.loadout[data.slot_id]
+    if not slot_entry then return log("warn", "[unequip_loadout_item] slot empty: " .. data.slot_id) end
+
+    local def = _items[slot_entry.id]
+    if not def then return log("error", "[unequip_loadout_item] no item def: " .. slot_entry.id) end
+
+    local use_config = def.actions and def.actions.use
+
+    if slot_entry.inventory_group then
+        local group_contents = exports.rig:remove_inventory_group(source, slot_entry.inventory_group)
+        slot_entry.metadata = slot_entry.metadata or {}
+        slot_entry.metadata.stored_items = group_contents
+    end
+
+    slot_entry.metadata = slot_entry.metadata or {}
+    slot_entry.metadata.equipped = false
+
+    inv_meta.equipped_inventories = inv_meta.equipped_inventories or {}
+    for i, equipped_inv in ipairs(inv_meta.equipped_inventories) do
+        if equipped_inv.serial == slot_entry.serial then
+            table.remove(inv_meta.equipped_inventories, i)
+            break
+        end
+    end
+
+    inv_meta.loadout[data.slot_id] = nil
+
+    local target_group = slot_entry.source_group or "pockets"
+    local success = _utils.add_item(source, slot_entry.id, 1, target_group)
+    if not success then
+        log("error", "[unequip_loadout_item] failed to return item to " .. target_group)
+        return
+    end
+
+    if use_config then
+        TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, { action = "remove", clothing = use_config.clothing, prop = use_config.prop })
+    end
+
+    exports.rig:set_inventory_metadata(source, inv_meta, false)
+    _utils.sync_and_refresh(source)
+    exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Unequipped %s"):format(def.label), duration = 4000 })
+    log("success", ("[unequip_loadout_item] src:%s unequipped %s from %s"):format(source, slot_entry.id, data.slot_id))
+end
+
+function m.animation_finished(source, data)
+    if not data or not data.item_id or not data.col or not data.row or not data.group then
+        return log("error", "[animation_finished] missing data")
+    end
+
+    local def = _items[data.item_id]
+    if not def then return log("warn", "[animation_finished] no item def: " .. data.item_id) end
+
+    if def.category == "player_inventory" then
+        return m.toggle_player_inventory(source, { col = data.col, row = data.row, group = data.group })
+    end
+
+    local use_config = def.actions and def.actions.use
+    if use_config then
+        local anim = use_config.animation
+        if type(anim) == "table" and type(anim.callback) == "function" then
+            anim.callback(source, data)
+        elseif type(use_config.callback) == "function" then
+            use_config.callback(source, data)
+        end
+    end
+end
+
 --- @section Use Item
 
 function m.use_item(source, use_data)
@@ -184,13 +378,15 @@ function m.use_item(source, use_data)
     if category == "player_inventory" then
         local use_config = def.actions and def.actions.use
         if use_config and use_config.animation then
-            TriggerClientEvent("rig:cl:use_item_animation", source, {
+            TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
                 animation = use_config.animation,
                 col = col, row = row, group = group, item_id = item.id
             })
             return true
         end
-        return false
+
+        m.toggle_player_inventory(source, { col = col, row = row, group = group })
+        return true
     end
 
     local ok = exports.rig:run_hook(item.id, source, col, row, group)

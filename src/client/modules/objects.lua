@@ -45,7 +45,7 @@ end
 
 --- @section API
 
-function objects.create(model, coords)
+function objects.create(model, coords, lod_dist)
     local model_hash = GetHashKey(model)
     if not request_model(model_hash) then
         print(("[objects] Failed to load model: %s"):format(model))
@@ -56,6 +56,7 @@ function objects.create(model, coords)
     PlaceObjectOnGroundProperly(entity)
     FreezeEntityPosition(entity, true)
     SetEntityCollision(entity, true, true)
+    SetEntityLodDist(entity, lod_dist or 100)
     SetModelAsNoLongerNeeded(model_hash)
     created_entities[entity] = true
     return entity

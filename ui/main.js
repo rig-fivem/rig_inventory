@@ -74,6 +74,15 @@ HANDLERS.update_grid = (data) => {
     ui.content.update_grid_from_server(data.items, data.section_key);
 };
 
+HANDLERS.update_slots = (data) => {
+    if (!data || !data.items) { return; }
+
+    const ui = window.ui_instance;
+    if (!ui || !ui.content) { return; }
+    
+    ui.content.update_slots_from_server(data.items);
+};
+
 /**
  * Global message listener for all NUI messages.
  * Routes each message to its corresponding handler.

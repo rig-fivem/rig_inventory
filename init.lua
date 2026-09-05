@@ -38,6 +38,17 @@ core.metadata = {
     author = GetResourceMetadata(core.resource_name, "author", 0) or "Unknown"
 }
 
+if core.client then
+
+    core.client_vars = {
+        current_vehicle_data = nil,
+        current_vehicle = nil,
+        current_inv_type = nil,
+        current_container = nil
+    }
+
+end
+
 --- @section Global Functions
 
 local function get_local_time()
@@ -120,6 +131,7 @@ local function safe_require(key)
 end
 
 _G.require = safe_require
+exports("require", safe_require)
 
 local function safe_require_json(key)
     if not key or type(key) ~= "string" then return nil end

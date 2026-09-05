@@ -149,6 +149,17 @@ end
 
 --- @section Inventory
 
+function m.update_slots(items)
+    if type(items) ~= "table" then
+        log("warn", "update_slots: invalid items table")
+        return
+    end
+
+    local safe_items = m.sanitize(items, "inventory_update")
+
+    SendNUIMessage({ func = "update_slots", items = safe_items })
+end
+
 function m.update_grid(items, section_key)
     if type(items) ~= "table" then
         log("warn", "update_grid: invalid items table")

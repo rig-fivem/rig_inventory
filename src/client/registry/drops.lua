@@ -19,7 +19,7 @@ local objects = require("src.client.modules.objects")
 --- @section Constants
 
 local SPAWN_DISTANCE   = 30.0
-local DESPAWN_DISTANCE = 35.0
+local DESPAWN_DISTANCE = SPAWN_DISTANCE + 10.0
 
 --- @section Class
 

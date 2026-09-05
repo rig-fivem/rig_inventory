@@ -14,9 +14,13 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @section Imports
 
 local _items = require("configs.items")
+local _inventories = require("configs.inventories")
 local _actions = require("src.server.modules.actions")
+local _utils = require("src.server.modules.utils")
+local _use_item = require("src.server.modules.actions.use")
 
 local Drops = require("src.server.registry.drops")
+local Containers = require("src.server.registry.containers")
 
 --- @section Variables
 
@@ -32,6 +36,7 @@ local starter_items = {
 --- @section Registries
 
 core.drops = Drops.new()
+core.containers = Containers.new()
 
 --- @section Usable Items
 
@@ -128,6 +133,74 @@ RegisterServerEvent("rig_inventory:server:use_item", function(data)
     _actions.use_item(_src, data)
 end)
 
+RegisterServerEvent("rig_inventory:server:close_inventory", function()
+    local _src = source
+
+    core.containers:unlock_all_for_player(_src)
+
+    TriggerClientEvent("rig_inventory:client:close_inventory", _src)
+end)
+
+RegisterServerEvent("rig_inventory:server:request_drops", function()
+    local _src = source
+    TriggerClientEvent("rig_inventory:client:init_drops", _src, core.drops.drops)
+end)
+
+RegisterServerEvent("rig_inventory:server:request_containers", function()
+    local _src = source
+    local payload = {}
+
+    local total = 0
+    for _ in pairs(core.containers.containers) do total = total + 1 end
+    print(("[request_containers] src:%s | %d containers in registry"):format(_src, total))
+
+    for id, container in pairs(core.containers.containers) do
+        local coords = container.metadata and container.metadata.coords
+        print(("[request_containers] id=%s type=%s subtype=%s has_coords=%s"):format(id, tostring(container.type), tostring(container.subtype), tostring(coords ~= nil)))
+
+        if container.type ~= "vehicle" and coords then
+            local def = _inventories[container.subtype]
+            if def and def.model then
+                payload[id] = {
+                    id = id,
+                    model = def.model,
+                    coords = coords,
+                    subtype = container.subtype,
+                    keys = { { key = "E", label = "Open Container" } }
+                }
+                print(("[request_containers] added %s to payload"):format(id))
+            else
+                print(("[request_containers] skip %s - no model def for subtype '%s'"):format(id, tostring(container.subtype)))
+            end
+        end
+    end
+
+    print(("[request_containers] sending %d container(s) to client"):format((function() local n=0 for _ in pairs(payload) do n=n+1 end return n end)()))
+    TriggerClientEvent("rig_inventory:client:init_containers", _src, payload)
+end)
+
+RegisterServerEvent("rig_inventory:server:animation_finished", function(data)
+    local _src = source
+    _use_item.animation_finished(_src, data)
+end)
+
+RegisterServerEvent("rig_inventory:server:unequip_loadout_item", function(data)
+    local _src = source
+    _use_item.unequip_loadout_item(_src, data)
+end)
+
+--- @section Lifecycle
+
+AddEventHandler("playerDropped", function()
+    local _src = source
+    core.containers:unlock_all_for_player(_src)
+end)
+
+AddEventHandler("onResourceStop", function(resource)
+    if GetCurrentResourceName() ~= resource then return end
+    core.containers:save_all()
+end)
+
 --- @section Commands
 
 RegisterCommand("_open_inventory", function(source)
@@ -137,14 +210,144 @@ RegisterCommand("_open_inventory", function(source)
         return
     end
 
-    local player_data = exports.rig:get_player_data(source, "inventory")
-    if not player_data then
+    local inventory_data = exports.rig:get_player_data(source, "inventory")
+    if not inventory_data then
         log("error", ("[rig_inventory] Failed to fetch inventory data for source %d"):format(source))
         return
     end
 
-    player_data.username = user.username
-    player_data.unique_id = user.unique_id
+    -- Build the base payload structure
+    local payload = {
+        player_data = {
+            unique_id = user.unique_id,
+            name = user.username,
+            items = inventory_data.items or {},
+            metadata = inventory_data.metadata or {}
+        },
+        secondary = nil,
+        is_vehicle = false
+    }
 
-    TriggerClientEvent("rig_inventory:client:open_inventory", source, player_data)
-end)
+    -- Fetch ped coords for spatial checks
+    local ped = GetPlayerPed(source)
+    if ped and ped ~= 0 then
+        local pcoords = GetEntityCoords(ped)
+
+        -- 1. Check for nearby vehicles
+        local info = _utils.get_vehicle_info(nil, { source = source, coords = pcoords, radius = 4.0 })
+        if info and info.plate then
+            local inv_type = info.is_inside and "glovebox" or "trunk"
+            local container = core.containers:get_or_create_vehicle(info.plate, inv_type, info)
+            
+            if container and _utils.try_lock_container(container.identifier, source) then
+                local cfg = _utils.get_vehicle_config(info.model, info.class, inv_type)
+                payload.secondary = {
+                    id = container.identifier,
+                    type = inv_type,
+                    items = container:get_items(),
+                    plate = info.plate,
+                    vehicle = info.entity,
+                    config = cfg,
+                    is_vehicle = true
+                }
+                payload.is_vehicle = true
+            end
+        end
+
+        -- 2. Check for nearby world containers if no vehicle was found
+        if not payload.secondary then
+            local container_id, container = _utils.get_nearest_container(pcoords, 2.5)
+            if container_id and container and _utils.try_lock_container(container_id, source) then
+                payload.secondary = {
+                    id = container_id,
+                    type = container.subtype or container.type,
+                    items = container:get_items(),
+                    metadata = container.metadata
+                }
+            end
+        end
+    end
+
+    -- Send payload to the client
+    TriggerClientEvent("rig_inventory:client:open_inventory", source, payload)
+end, false)
+
+--- @section Bootstrap
+
+local function load_persisted_containers()
+    local rows = exports.oxmysql:query_async("SELECT identifier, owner, inventory_type, inventory_subtype, metadata FROM inventories WHERE inventory_type = 'container'", {})
+    if not rows then return end
+
+    local count = 0
+    for _, row in ipairs(rows) do
+        print(("[bootstrap] row: identifier=%s subtype=%s raw_metadata=%s"):format(row.identifier, tostring(row.inventory_subtype), tostring(row.metadata)))
+
+        local metadata = row.metadata and json.decode(row.metadata) or {}
+        print(("[bootstrap] decoded metadata: %s"):format(json.encode(metadata)))
+
+        local container = core.containers:get_or_create(row.identifier, {
+            owner = row.owner,
+            type = row.inventory_type,
+            subtype = row.inventory_subtype,
+            metadata = metadata
+        })
+
+        if container then
+            count = count + 1
+            print(("[bootstrap] loaded %s | container.metadata=%s"):format(row.identifier, json.encode(container.metadata)))
+        else
+            print(("[bootstrap] FAILED to load %s"):format(row.identifier))
+        end
+    end
+
+    log("success", ("[rig_inventory] Loaded %d persisted container(s) from DB"):format(count))
+end
+
+SetTimeout(500, load_persisted_containers)
+
+--- @section Debug Commands
+
+RegisterCommand("testcontainer", function(source, args)
+    if source == 0 then return end
+
+    local subtype = args[1] or "storage_crate"
+    local def = _inventories[subtype]
+    if not def or not def.is_container then
+        return print(("[testcontainer] '%s' isn't a valid container type in configs.inventories"):format(subtype))
+    end
+
+    local ped = GetPlayerPed(source)
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    local rad = math.rad(heading)
+
+    local target = {
+        x = coords.x + (-math.sin(rad) * 1.5),
+        y = coords.y + (math.cos(rad) * 1.5),
+        z = coords.z
+    }
+
+    local identifier = ("%s:%s"):format(subtype, os.time())
+
+    local container = core.containers:get_or_create(identifier, {
+        owner = GetPlayerIdentifierByType(source, "license") or tostring(source),
+        type = "container",
+        subtype = subtype,
+        metadata = { coords = target }
+    })
+
+    if not container then
+        return print(("[testcontainer] failed to create container %s"):format(identifier))
+    end
+
+    TriggerClientEvent("rig_inventory:client:add_container", -1, {
+        id = identifier,
+        model = def.model,
+        coords = target,
+        keys = {
+            { key = "E", label = "Open Container" }
+        }
+    })
+
+    print(("[testcontainer] spawned '%s' (%s) at %s"):format(identifier, subtype, json.encode(target)))
+end, false)

@@ -21,6 +21,50 @@ local _utils = require("src.server.modules.utils")
 
 local m = {}
 
+--- @section Constants
+
+local CLOTHING_COMPONENTS = {
+    [5] = { style = "bag_style", texture = "bag_texture" },
+}
+
+--- @section Apply Clothing
+
+local function apply_loadout_clothing(source, use_config, equipping)
+    if not use_config or not use_config.clothing then return end
+
+    local mapping = CLOTHING_COMPONENTS[use_config.clothing.component_id]
+    if not mapping then
+        log("warn", ("[apply_loadout_clothing] no style mapping for component_id %s - add one to CLOTHING_COMPONENTS"):format(tostring(use_config.clothing.component_id)))
+    else
+        local avatar_data = exports.rig:get_player_data(source, "avatar")
+        local current_clothing = (avatar_data and avatar_data.clothing) or {}
+
+        local patched_clothing = {}
+        for k, v in pairs(current_clothing) do patched_clothing[k] = v end
+
+        if equipping then
+            local gender_clothing = use_config.clothing.male or use_config.clothing.female or use_config.clothing
+            patched_clothing[mapping.style] = gender_clothing.drawable
+            if mapping.texture then patched_clothing[mapping.texture] = gender_clothing.texture end
+        else
+            patched_clothing[mapping.style] = -1
+            if mapping.texture then patched_clothing[mapping.texture] = 0 end
+        end
+
+        local persisted = exports.rig:customise_avatar(source, { clothing = patched_clothing })
+        if not persisted then
+            log("error", ("[apply_loadout_clothing] customise_avatar failed for src:%s"):format(source))
+        end
+    end
+
+
+    TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, {
+        action = equipping and "equip" or "remove",
+        clothing = use_config.clothing,
+        prop = use_config.prop
+    })
+end
+
 --- @section Weapon Handlers
 
 local function handle_weapon_use(source, col, row, item, def, group)
@@ -202,7 +246,7 @@ function m.toggle_player_inventory(source, data)
 
         _utils.add_item(source, item.id, 1, data.group)
 
-        TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, { action = "remove", clothing = use_config.clothing, prop = use_config.prop })
+        apply_loadout_clothing(source, use_config, false)
         exports.rig:set_inventory_metadata(source, inv_meta, false)
         _utils.sync_and_refresh(source)
         exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Unequipped %s"):format(def.label), duration = 4000 })
@@ -266,7 +310,7 @@ function m.toggle_player_inventory(source, data)
             item_id = item.id
         })
 
-        TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, { action = "equip", clothing = use_config.clothing, prop = use_config.prop })
+        apply_loadout_clothing(source, use_config, true)
         exports.rig:set_inventory_metadata(source, inv_meta, false)
         _utils.sync_and_refresh(source)
         exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Equipped %s"):format(def.label), duration = 4000 })
@@ -316,7 +360,7 @@ function m.unequip_loadout_item(source, data)
     end
 
     if use_config then
-        TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, { action = "remove", clothing = use_config.clothing, prop = use_config.prop })
+        apply_loadout_clothing(source, use_config, false)
     end
 
     exports.rig:set_inventory_metadata(source, inv_meta, false)

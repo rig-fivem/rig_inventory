@@ -184,7 +184,7 @@ RegisterServerEvent("rig_inventory:server:request_containers", function()
         end
     end
 
-    log("error", ("[request_containers] sending %d container(s) to client"):format((function() local n=0 for _ in pairs(payload) do n=n+1 end return n end)()))
+    log("info", ("[request_containers] sending %d container(s) to client"):format((function() local n=0 for _ in pairs(payload) do n=n+1 end return n end)()))
     TriggerClientEvent("rig_inventory:client:init_containers", _src, payload)
 end)
 

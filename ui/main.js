@@ -12,8 +12,13 @@ License: https://github.com/rig-fivem/rig/blob/main/LICENSE
 
 import { Modal } from "./modal/js/modal.js";
 import { UIBuilder } from "./framework/js/main.js";
+import { SlotPopup } from "./framework/js/components/inventory_popup.js";
 
 // Handler Functions
+
+const inventory_popup = new SlotPopup({
+    position: "bottom-center"
+});
 
 const HANDLERS = {}
 
@@ -81,6 +86,11 @@ HANDLERS.update_slots = (data) => {
     if (!ui || !ui.content) { return; }
     
     ui.content.update_slots_from_server(data.items);
+};
+
+HANDLERS.inventory_popup = (data) => {
+    if (!data) return;
+    inventory_popup.show(data.payload);
 };
 
 /**

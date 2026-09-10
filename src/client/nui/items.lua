@@ -14,7 +14,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @section Imports
 
-local _items = require("configs.items")
+local _items = require("src.shared.data.items")
 local _inventories = require("configs.inventories")
 local _metadata = require("configs.metadata")
 

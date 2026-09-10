@@ -14,7 +14,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @section Imports
 
-local _items = require("configs.items")
+local _items = require("src.shared.data.items")
 local _inventories = require("configs.inventories")
 local _vehicles = require("configs.vehicles")
 
@@ -22,9 +22,25 @@ local _vehicles = require("configs.vehicles")
 
 local m = {}
 
---- @section Helpers
+--- @section General Utilities
 
-local function get_player_group_priority(source)
+function m.metadata_equal(a, b)
+    if a == b then return true end
+    if not a or not b then return false end
+    for k, v in pairs(a) do if b[k] ~= v then return false end end
+    for k, v in pairs(b) do if a[k] ~= v then return false end end
+    return true
+end
+
+function m.resolve_target_group(source, w, h)
+    for _, group_id in ipairs(m.get_player_group_priority(source)) do
+        local col, row = m.find_free_slot(source, group_id, w, h)
+        if col then return group_id, col, row end
+    end
+    return nil
+end
+
+function m.get_player_group_priority(source)
     local inv = exports.rig:get_inventory(source)
     local existing = inv and inv.items or {}
 
@@ -40,100 +56,6 @@ local function get_player_group_priority(source)
     for _, entry in ipairs(groups) do ids[#ids + 1] = entry.id end
     return ids
 end
-
-local function resolve_target_group(source, w, h)
-    for _, group_id in ipairs(get_player_group_priority(source)) do
-        local col, row = m.find_free_slot(source, group_id, w, h)
-        if col then return group_id, col, row end
-    end
-    return nil
-end
-
---- @section Metadata
-
-function m.metadata_equal(a, b)
-    if a == b then return true end
-    if not a or not b then return false end
-    for k, v in pairs(a) do if b[k] ~= v then return false end end
-    for k, v in pairs(b) do if a[k] ~= v then return false end end
-    return true
-end
-
---- @section Get / Set
-
-function m.get_item(source, col, row, group)
-    local inv = exports.rig:get_inventory(source)
-    if not inv or not inv.items or not inv.items[group] then return nil end
-    return inv.items[group][col .. "_" .. row]
-end
-
-function m.set_item(source, col, row, group, item)
-    return exports.rig:set_inventory_slots(source, {
-        { group_id = group, key = col .. "_" .. row, item = item }
-    })
-end
-
---- @section Remove
-
-function m.remove_item(source, col, row, group, amount)
-    local item = m.get_item(source, col, row, group)
-    if not item then return false end
-
-    amount = amount or 1
-    local qty = item.quantity or 1
-
-    if qty <= amount then
-        return m.set_item(source, col, row, group, nil)
-    end
-
-    item.quantity = qty - amount
-    return m.set_item(source, col, row, group, item)
-end
-
---- @section Place
-
-function m.place_item(source, group, col, row, item_data)
-    if not group or not col or not row or not item_data or not item_data.id then
-        return false, "invalid_args"
-    end
-
-    local def = _items[item_data.id]
-    if not def then return false, "invalid_item_id" end
-
-    local w = item_data.w or def.w or 1
-    local h = item_data.h or def.h or 1
-    local stackable = def.stackable
-    if stackable == nil then stackable = true end
-    local max_stack = type(stackable) == "number" and stackable or math.huge
-
-    local existing = m.get_item(source, col, row, group)
-
-    if not existing then
-        local ok = m.set_item(source, col, row, group, {
-            id = item_data.id, quantity = item_data.quantity or 1, metadata = item_data.metadata,
-            col = col, row = row, w = w, h = h
-        })
-        return ok, "item_placed_success", nil
-    end
-
-    if stackable ~= false and existing.id == item_data.id and metadata_equal(existing.metadata, item_data.metadata) then
-        local can_add = max_stack - (existing.quantity or 1)
-        if can_add >= (item_data.quantity or 1) then
-            existing.quantity = (existing.quantity or 1) + (item_data.quantity or 1)
-            local ok = m.set_item(source, col, row, group, existing)
-            return ok, "item_stacked_success", nil
-        end
-    end
-
-    local displaced = existing
-    local ok = m.set_item(source, col, row, group, {
-        id = item_data.id, quantity = item_data.quantity or 1, metadata = item_data.metadata,
-        col = col, row = row, w = w, h = h
-    })
-    return ok, "item_swapped_success", displaced
-end
-
---- @section Free Slot
 
 function m.find_free_slot(source, group, w, h)
     w = w or 1
@@ -182,7 +104,75 @@ function m.find_free_slot(source, group, w, h)
     return nil, nil
 end
 
---- @section Add
+--- @section Actions
+
+function m.get_item(source, col, row, group)
+    local inv = exports.rig:get_inventory(source)
+    if not inv or not inv.items or not inv.items[group] then return nil end
+    return inv.items[group][col .. "_" .. row]
+end
+
+function m.set_item(source, col, row, group, item)
+    return exports.rig:set_inventory_slots(source, {
+        { group_id = group, key = col .. "_" .. row, item = item }
+    })
+end
+
+function m.remove_item(source, col, row, group, amount)
+    local item = m.get_item(source, col, row, group)
+    if not item then return false end
+
+    amount = amount or 1
+    local qty = item.quantity or 1
+
+    if qty <= amount then
+        return m.set_item(source, col, row, group, nil)
+    end
+
+    item.quantity = qty - amount
+    return m.set_item(source, col, row, group, item)
+end
+
+function m.place_item(source, group, col, row, item_data)
+    if not group or not col or not row or not item_data or not item_data.id then
+        return false, "invalid_args"
+    end
+
+    local def = _items[item_data.id]
+    if not def then return false, "invalid_item_id" end
+
+    local w = item_data.w or def.w or 1
+    local h = item_data.h or def.h or 1
+    local stackable = def.stackable
+    if stackable == nil then stackable = true end
+    local max_stack = type(stackable) == "number" and stackable or math.huge
+
+    local existing = m.get_item(source, col, row, group)
+
+    if not existing then
+        local ok = m.set_item(source, col, row, group, {
+            id = item_data.id, quantity = item_data.quantity or 1, metadata = item_data.metadata,
+            col = col, row = row, w = w, h = h
+        })
+        return ok, "item_placed_success", nil
+    end
+
+    if stackable ~= false and existing.id == item_data.id and m.metadata_equal(existing.metadata, item_data.metadata) then
+        local can_add = max_stack - (existing.quantity or 1)
+        if can_add >= (item_data.quantity or 1) then
+            existing.quantity = (existing.quantity or 1) + (item_data.quantity or 1)
+            local ok = m.set_item(source, col, row, group, existing)
+            return ok, "item_stacked_success", nil
+        end
+    end
+
+    local displaced = existing
+    local ok = m.set_item(source, col, row, group, {
+        id = item_data.id, quantity = item_data.quantity or 1, metadata = item_data.metadata,
+        col = col, row = row, w = w, h = h
+    })
+    return ok, "item_swapped_success", displaced
+end
 
 function m.add_item(source, item_id, quantity, group, metadata)
     quantity = quantity or 1
@@ -200,14 +190,14 @@ function m.add_item(source, item_id, quantity, group, metadata)
     local max_stack = type(stackable) == "number" and stackable or math.huge
 
     local remaining = quantity
-    local search_groups = group and { group } or get_player_group_priority()
+    local search_groups = group and { group } or m.get_player_group_priority()
 
     if stackable ~= false then
         local inv = exports.rig:get_inventory(source)
         for _, group_id in ipairs(search_groups) do
             local items = inv and inv.items and inv.items[group_id] or {}
             for key, existing in pairs(items) do
-                if existing.id == item_id and metadata_equal(existing.metadata, metadata) then
+                if existing.id == item_id and m.metadata_equal(existing.metadata, metadata) then
                     local can_add = max_stack - (existing.quantity or 1)
                     if can_add > 0 then
                         local add = math.min(can_add, remaining)
@@ -229,7 +219,7 @@ function m.add_item(source, item_id, quantity, group, metadata)
             col, row = m.find_free_slot(source, group, w, h)
             target_group = group
         else
-            target_group, col, row = resolve_target_group(source, w, h)
+            target_group, col, row = m.resolve_target_group(source, w, h)
         end
 
         if not col then break end
@@ -257,14 +247,12 @@ function m.add_item(source, item_id, quantity, group, metadata)
     return false, "no_free_slot"
 end
 
---- @section Metadata
+--- @section Inventory Data
 
 function m.get_inventory_metadata(source)
     local inv = exports.rig:get_inventory(source)
     return inv and inv.metadata or {}
 end
-
---- @section Sync
 
 function m.sync_and_refresh(source, container)
     local synced = exports.rig:sync_player_data(source)
@@ -276,7 +264,7 @@ function m.sync_and_refresh(source, container)
     if container then
         container_data = {
             id = container.identifier,
-            subtype = container.subtype or container.type, -- Added subtype here
+            subtype = container.subtype or container.type,
             items = container:get_items()
         }
     end
@@ -407,6 +395,39 @@ function m.try_lock_container(container_id, source)
         core.containers:lock(container_id, source)
     end
     return true
+end
+
+--- @section Inventory Popup
+
+function m.send_popup(source, item_id, item_def, quantity, action)
+    TriggerClientEvent("rig_inventory:client:inventory_popup", source, {
+        item_id = item_id,
+        image = core.settings.general.image_path .. item_def.image,
+        quantity = quantity,
+        action = action or "added",
+        rarity = item_def.metadata and item_def.metadata.rarity or "common"
+    })
+end
+
+function m.get_item_count(source, item_id, metadata)
+    local inv = exports.rig:get_inventory(source)
+    if not inv or not inv.items then return 0 end
+
+    local total = 0
+    for _, group_items in pairs(inv.items) do
+        for _, item in pairs(group_items) do
+            if item.id == item_id and (not metadata or m.metadata_equal(item.metadata, metadata)) then
+                total = total + (item.quantity or 1)
+            end
+        end
+    end
+
+    return total
+end
+
+function m.has_item(source, item_id, amount, metadata)
+    amount = amount or 1
+    return m.get_item_count(source, item_id, metadata) >= amount
 end
 
 return m

@@ -12,12 +12,12 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file src/client/modules/objects.lua
 --- @description Handles creating and removing world objects.
 
-if rawget(_G, "__objects_module") then
-    return _G.__objects_module
+if rawget(_G, "__client_objects_module") then
+    return _G.__client_objects_module
 end
 
-local objects = {}
-_G.__objects_module = objects
+local m = {}
+_G.__client_objects_module = m
 
 --- @section State
 
@@ -45,7 +45,7 @@ end
 
 --- @section API
 
-function objects.create(model, coords, lod_dist)
+function m.create(model, coords, lod_dist)
     local model_hash = GetHashKey(model)
     if not request_model(model_hash) then
         print(("[objects] Failed to load model: %s"):format(model))
@@ -62,28 +62,30 @@ function objects.create(model, coords, lod_dist)
     return entity
 end
 
-function objects.remove(entity)
+function m.remove(entity)
     if entity and DoesEntityExist(entity) then
         DeleteEntity(entity)
         created_entities[entity] = nil
     end
 end
 
-function objects.track_entity(entity)
+function m.track_entity(entity)
     if entity then created_entities[entity] = true end
 end
 
-function objects.cleanup_all()
+function m.cleanup_all()
     for entity in pairs(created_entities) do
         if DoesEntityExist(entity) then DeleteEntity(entity) end
     end
     created_entities = {}
 end
 
+--- @section Events
+
 AddEventHandler("onResourceStop", function(resource)
     if GetCurrentResourceName() == resource then
-        objects.cleanup_all()
+        m.cleanup_all()
     end
 end)
 
-return objects
+return m

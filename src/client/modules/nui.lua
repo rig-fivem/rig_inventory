@@ -171,6 +171,16 @@ function m.update_grid(items, section_key)
     SendNUIMessage({ func = "update_grid", items = safe_items, section_key = section_key })
 end
 
+--- @section Popup
+
+function m.inventory_popup(data)
+    if not data then return end
+    SendNUIMessage({
+        func = "inventory_popup",
+        payload = data
+    })
+end
+
 --- @section NUI Callbacks
 
 RegisterNUICallback("nui:remove_focus", function()
@@ -235,6 +245,10 @@ RegisterNetEvent("rig_inventory:client:close_ui", function()
     m.close_ui()
 end)
 
+RegisterNetEvent("rig_inventory:client:inventory_popup", function(data)
+    m.inventory_popup(data)
+end)
+
 --- @section Exports
 
 exports("build_modal", m.build_modal)
@@ -242,5 +256,7 @@ exports("close_modal", m.close_modal)
 
 exports("build_ui", m.build_ui)
 exports("close_ui", m.close_ui)
+
+exports("inventory_popup", m.inventory_popup)
 
 return m

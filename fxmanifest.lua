@@ -25,9 +25,11 @@ files {
 }
 
 shared_scripts {
-    "configs/*.lua",
-    "init.lua"
+    "init.lua",
+    "configs/**/*.lua",
+    "src/shared/data/*.lua"
 }
+
 client_scripts {
     "src/client/registry/*.lua",
     "src/client/modules/*.lua",
@@ -37,7 +39,8 @@ client_scripts {
 server_scripts {
     "src/server/registry/*.lua",
     "src/server/modules/**/*.lua",
-    "src/server/main.lua"
+    "src/server/main.lua",
+    "src/server/commands.lua"
 }
 
 dependency "rig"

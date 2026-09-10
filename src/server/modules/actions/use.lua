@@ -14,7 +14,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @section Imports
 
-local _items = require("configs.items")
+local _items = require("src.shared.data.items")
 local _utils = require("src.server.modules.utils")
 
 --- @section Initialisation
@@ -415,7 +415,13 @@ function m.use_item(source, use_data)
 
     local category = def.category or "general"
 
-    if category == "weapon" then return handle_weapon_use(source, col, row, item, def, group) end
+    local weapon_categories = {
+        firearm = true,
+        melee = true,
+        throwable = true
+    }
+
+    if weapon_categories[category] then return handle_weapon_use(source, col, row, item, def, group) end
     if category == "ammo" then return handle_ammo_use(source, col, row, item, def, group) end
     if category == "attachments" then return handle_attachment_use(source, col, row, item, def, group) end
 

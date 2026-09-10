@@ -11,6 +11,20 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @module configs.items
 --- @description Handles all static data for items.
 
+local items = {}
+
+local categories = { "ammo", "attachments", "consumables", "containers", "resources", "weapons" }
+
+for _, category in ipairs(categories) do
+    local category_items = require(("configs.items.%s"):format(category))
+    for item_id, data in pairs(category_items) do
+        items[item_id] = data
+    end
+end
+
+return items
+
+--[[
 return {
 
     --- @section Food/Drinks
@@ -129,7 +143,7 @@ return {
         w = 2,
         h = 2,
         stackable = false,
-        category = "weapon",
+        category = "firearms",
         metadata = {
             rarity = "common",
             serial = "",
@@ -140,6 +154,26 @@ return {
         },
         actions = {
             drop = { model = "w_pi_pistol" },
+            use = true
+        }
+    },
+
+    weapon_hatchet = {
+        label = "Hatchet",
+        description = "A sturdy wood-cutting utility hatchet, doubles well in a pinch.",
+        image = "weapon_hatchet.png",
+        weight = 1200,
+        w = 1,
+        h = 2,
+        stackable = false,
+        category = "melee",
+        metadata = {
+            rarity = "common",
+            serial = "",
+            durability = 100
+        },
+        actions = {
+            drop = { model = "w_me_hatchet" },
             use = true
         }
     },
@@ -186,6 +220,18 @@ return {
                 }
             }
         }
+    },
+
+    --- @section Materials
+
+    wood = {
+        label = "Water",
+        description = {
+            "A refreshing bottle of clean water.",
+            "Can be purchased from most stores."
+        },
+        image = "water.png",
     }
 
 }
+    ]]

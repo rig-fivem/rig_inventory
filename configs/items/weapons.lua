@@ -8,7 +8,7 @@ return {
         w = 2,
         h = 2,
         stackable = false,
-        category = "firearms",
+        category = "firearm",
         metadata = {
             rarity = "common",
             serial = "",

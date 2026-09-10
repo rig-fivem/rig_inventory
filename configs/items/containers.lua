@@ -33,10 +33,7 @@ return {
                     flags = 49,
                     duration = 2000,
                     freeze = false,
-                    continuous = false,
-                    callback = function(source, data)
-                        core.toggle_player_inventory(source, data)
-                    end
+                    continuous = false
                 }
             }
         }

@@ -205,8 +205,8 @@ function m.build_vicinity(drops, radius)
 end
 
 function m.build_loadout(loadout)
-    print("build_loadout: ", json.encode(loadout))
     local loadout_items = {}
+    
     for slot_id, entry in pairs(loadout or {}) do
         local def = _items[entry.id]
         loadout_items[slot_id] = {

@@ -10,6 +10,7 @@ return {
         weight = 330,
         w = 1,
         h = 1,
+        category = "consumable",
         metadata = {
             rarity = "common",
             quality = 100,
@@ -20,6 +21,13 @@ return {
                 model = "ba_prop_club_water_bottle"
             },
             use = {
+                consume = {
+                    statuses = {
+                        thirst = { min = 45, max = 65 },
+                        hunger = { min = 45, max = 65 }
+                    },
+                    remove_on_use = 1
+                },
                 animation = {
                     progress = { message = "Drinking Water.." },
                     dict = "mp_player_intdrink",
@@ -40,14 +48,10 @@ return {
                             rot_order = 1,
                             sync_rot = true
                         }
-                    },
-                    callback = function(source, data)
-                        print("source: ", source)
-                        print("data: ", json.encode(data))
-                    end
+                    }
                 }
             }
         }
-    },
+    }
 
 }

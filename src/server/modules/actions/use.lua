@@ -198,6 +198,45 @@ local function handle_attachment_use(source, col, row, item, def, group)
     return true
 end
 
+--- @section Consumables
+
+function m.handle_consumable_use(source, data)
+    if not source or not data then return log("error", "[handle_consumable_use] missing args") end
+
+    local item = _utils.get_item(source, data.col, data.row, data.group)
+    if not item then return log("warn", "[handle_consumable_use] no item at position") end
+
+    local def = _items[item.id]
+    if not def then return log("error", "[handle_consumable_use] no definition: " .. item.id) end
+
+    local consume = def.actions and def.actions.use and def.actions.use.consume
+    if not consume then return log("warn", "[handle_consumable_use] no consume config: " .. item.id) end
+
+    if consume.statuses then
+        local current = exports.rig:get_player_statuses(source)
+        if current then
+            local updates = {}
+
+            for status_name, range in pairs(consume.statuses) do
+                local delta = math.random(range.min, range.max)
+                if current[status_name] then
+                    updates[status_name] = current[status_name] + delta
+                end
+            end
+
+            if next(updates) then
+                exports.rig:set_player_statuses_bulk(source, updates)
+            end
+        end
+    end
+
+    _utils.remove_item(source, data.col, data.row, data.group, consume.remove_on_use or 1)
+    _utils.sync_and_refresh(source)
+
+    return true
+end
+core.handle_consumable_use = m.handle_consumable_use
+
 --- @section Player Inventory Actions
 
 function m.toggle_player_inventory(source, data)
@@ -244,7 +283,7 @@ function m.toggle_player_inventory(source, data)
             end
         end
 
-        _utils.add_item(source, item.id, 1, data.group)
+        _utils.add_item(source, item.id, 1, data.group, item.metadata)
 
         apply_loadout_clothing(source, use_config, false)
         exports.rig:set_inventory_metadata(source, inv_meta, false)
@@ -353,7 +392,7 @@ function m.unequip_loadout_item(source, data)
     inv_meta.loadout[data.slot_id] = nil
 
     local target_group = slot_entry.source_group or "pockets"
-    local success = _utils.add_item(source, slot_entry.id, 1, target_group)
+    local success = _utils.add_item(source, slot_entry.id, 1, target_group, slot_entry.metadata)
     if not success then
         log("error", "[unequip_loadout_item] failed to return item to " .. target_group)
         return
@@ -379,6 +418,10 @@ function m.animation_finished(source, data)
 
     if def.category == "player_inventory" then
         return m.toggle_player_inventory(source, { col = data.col, row = data.row, group = data.group })
+    end
+
+    if def.category == "consumable" then
+        return m.handle_consumable_use(source, { col = data.col, row = data.row, group = data.group })
     end
 
     local use_config = def.actions and def.actions.use
@@ -437,6 +480,18 @@ function m.use_item(source, use_data)
 
         m.toggle_player_inventory(source, { col = col, row = row, group = group })
         return true
+    end
+
+    if category == "consumable" then
+        local use_config = def.actions and def.actions.use
+        if use_config and use_config.animation then
+            TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
+                animation = use_config.animation,
+                col = col, row = row, group = group, item_id = item.id
+            })
+            return true
+        end
+        return m.handle_consumable_use(source, { col = col, row = row, group = group })
     end
 
     local ok = exports.rig:run_hook(item.id, source, col, row, group)

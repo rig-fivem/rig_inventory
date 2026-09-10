@@ -70,7 +70,7 @@ function m.play(player_ped, options, callback)
     if options.props then
         for _, prop in ipairs(options.props) do
             request_model(prop.model)
-            local prop_entity = CreateObject(GetHashKey(prop.model), GetEntityCoords(player_ped), true, true, true)
+            local prop_entity = CreateObject(GetHashKey(prop.model), GetEntityCoords(player_ped), false, true, true)
             AttachEntityToEntity(prop_entity, player_ped, GetPedBoneIndex(player_ped, prop.bone), prop.coords.x or 0.0, prop.coords.y or 0.0, prop.coords.z or 0.0, prop.rotation.x or 0.0, prop.rotation.y or 0.0, prop.rotation.z or 0.0, true, prop.use_soft or false, prop.collision or false, prop.is_ped or true, prop.rot_order or 1, prop.sync_rot or true)
             table.insert(props, prop_entity)
         end

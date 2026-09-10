@@ -17,6 +17,7 @@ local _nui = require("src.client.modules.nui")
 local _inv = require("src.client.nui.inventory")
 local _item_builder = require("src.client.nui.items")
 local _animations = require("src.client.modules.animations")
+local _utils = require("src.client.modules.utils")
 
 local Drops = require("src.client.registry.drops")
 local Containers = require("src.client.registry.containers")
@@ -47,7 +48,7 @@ RegisterNetEvent("rig_inventory:client:open_inventory", function(payload)
             }
 
             core.client_containers:add_vehicle(payload.secondary)
-            utils.set_vehicle_trunk_state(payload.secondary.vehicle, payload.secondary.type, true)
+            _utils.set_vehicle_trunk_state(payload.secondary.vehicle, payload.secondary.type, true)
         else
             core.client_vars.current_vehicle = nil
             core.client_vars.current_vehicle_data = nil

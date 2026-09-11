@@ -1,3 +1,20 @@
+--[[
+----------------------------------------
+RIG Inventory (built for RIG-FiveM)
+
+Author: Case (https://caseirl.dev)
+Repo: https://github.com/rig-fivem/rig_inventory
+License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
+----------------------------------------
+]]
+
+--- @module bags
+--- @file configs/items/equipment/bags.lua
+--- @description Handles all static data for items.
+---
+--- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "bags",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE CATEGORY `use_item` WILL FAIL
+
 return {
 
     dufflebag = {
@@ -8,7 +25,7 @@ return {
         w = 2,
         h = 2,
         stackable = false,
-        category = "player_inventory",
+        category = "bags",
         metadata = {
             equipped = false
         },

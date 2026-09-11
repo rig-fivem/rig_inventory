@@ -44,7 +44,7 @@ function m.drop_item(source, data)
     local ped = GetPlayerPed(source)
     if not ped or ped == 0 then return log("error", "[drop_item] no ped") end
 
-    local removed = _utils.remove_item(source, data.col, data.row, data.group, quantity)
+    local removed = _utils.remove_item(source, data.col, data.row, data.group, quantity, true)
     if not removed then return log("error", "[drop_item] remove failed") end
 
     local coords = GetEntityCoords(ped)
@@ -79,7 +79,7 @@ function m.pickup_drop(source, drop_id)
         return log("warn", "[pickup_drop] drop already locked: " .. tostring(drop_id))
     end
 
-    local success = _utils.add_item(source, drop.item_id, drop.quantity, nil, drop.metadata)
+    local success = _utils.add_item(source, drop.item_id, drop.quantity, nil, drop.metadata, true)
     if not success then
         core.drops:unlock(drop_id)
         return log("warn", "[pickup_drop] add_item failed for: " .. drop.item_id)

@@ -17,7 +17,6 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 local _items = require("src.shared.data.items")
 local _inventories = require("configs.inventories")
 local _item_builder = require("src.client.nui.items")
-
 --- @section Initalisation
 
 local m = {}
@@ -134,7 +133,65 @@ function m.build_container(container_id)
     }
 end
 
-function m.build_right()
+--- @section Crafting
+
+function m.build_crafting(crafting)
+    local recipe_cards = {}
+
+    for item_id, def in pairs(_items) do
+        local craft = def.actions and def.actions.craft
+        if craft then
+            local ingredient_values = {}
+            for _, ingredient in ipairs(craft.ingredients or {}) do
+                local ingredient_def = _items[ingredient.id]
+                ingredient_values[#ingredient_values + 1] = {
+                    key = (ingredient_def and ingredient_def.label) or ingredient.id,
+                    value = tostring(ingredient.amount)
+                }
+            end
+
+            recipe_cards[#recipe_cards + 1] = {
+                image = core.settings.general.image_path .. (def.image or "default.png"),
+                title = def.label,
+                description = def.category or "general",
+                layout = "row",
+                on_hover = {
+                    title = def.label,
+                    description = def.description,
+                    values = ingredient_values,
+                    actions = {
+                        { 
+                            id = "craft_item",
+                            key = "E",
+                            label = "Craft",
+                            on_action = function()
+                                TriggerServerEvent("rig_inventory:server:quick_craft", item_id)
+                            end
+                        }
+                    },
+                    rarity = (def.metadata and def.metadata.rarity) or "common"
+                }
+            }
+        end
+    end
+
+    return {
+        type = "cards",
+        section_key = "crafting",
+        title = {
+            text = "Crafting",
+            span = '<i class="fa-solid fa-hammer"></i> Recipes'
+        },
+        layout = { columns = 2, flex = "row", scroll_x = "none", scroll_y = "scroll" },
+        cards = recipe_cards
+    }
+end
+
+function m.build_right(crafting)
+    if crafting then
+        return m.build_crafting()
+    end
+
     if core.client_vars and core.client_vars.current_vehicle_data then
         local d = core.client_vars.current_vehicle_data
         return m.build_vehicle(d.plate, d.type, d.config)

@@ -22,6 +22,8 @@ local _utils = require("src.client.modules.utils")
 local Drops = require("src.client.registry.drops")
 local Containers = require("src.client.registry.containers")
 
+local _items = require("src.shared.data.items")
+
 --- @section Globals
 
 core.client_drops = Drops.new()
@@ -157,6 +159,31 @@ AddEventHandler("rig_inventory:client:use_item_animation", function(data)
             row = data.row,
             group = data.group
         })
+    end)
+end)
+
+RegisterNetEvent("rig_inventory:client:play_animation")
+AddEventHandler("rig_inventory:client:play_animation", function(item_id)
+    if not item_id then
+        log("error", "[play_animation] missing item id")
+        return
+    end
+
+    if not _items[item_id] then
+        log("error", "[play_animation] item id is not a registered item")
+        return
+    end
+
+    local item = _items[item_id]
+    local ped = PlayerPedId()
+
+    _animations.play(ped, {
+        dict = "amb@prop_human_parking_meter@female@base",
+        anim = "base_female",
+        flags = 49,
+        duration = (item.actions.craft and item.actions.craft.duration or 3.5) * 1000
+    }, function()
+        TriggerServerEvent("rig_inventory:server:craft_finished", item_id)
     end)
 end)
 

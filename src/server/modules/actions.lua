@@ -23,8 +23,7 @@ end
 local _use = require("src.server.modules.actions.use")
 local _move = require("src.server.modules.actions.move")
 local _drop = require("src.server.modules.actions.drop")
-local _add = require("src.server.modules.actions.add")
-local _remove = require("src.server.modules.actions.remove")
+
 
 local _utils = require("src.server.modules.utils")
 
@@ -37,13 +36,13 @@ m.use_item = _use.use_item
 m.move_item = _move.move_item
 m.drop_item = _drop.drop_item
 m.pickup_drop = _drop.pickup_drop
-m.add_item = _add.add_item
-m.remove_item = _remove.remove_item
+m.add_item = _utils.add_item
+m.remove_item = _utils.remove_item
 
 --- @section Exports
 
-exports("add_item", m.add_item)
-exports("remove_item", m.remove_item)
+exports("add_item", _utils.add_item)
+exports("remove_item", _utils.remove_item)
 exports("get_item_count", _utils.get_item_count)
 exports("has_item", _utils.has_item)
 

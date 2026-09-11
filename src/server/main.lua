@@ -18,6 +18,7 @@ local _inventories = require("configs.inventories")
 local _actions = require("src.server.modules.actions")
 local _utils = require("src.server.modules.utils")
 local _use_item = require("src.server.modules.actions.use")
+local _craft = require("src.server.modules.actions.craft")
 
 local Drops = require("src.server.registry.drops")
 local Containers = require("src.server.registry.containers")
@@ -196,6 +197,16 @@ end)
 RegisterServerEvent("rig_inventory:server:unequip_loadout_item", function(data)
     local _src = source
     _use_item.unequip_loadout_item(_src, data)
+end)
+
+RegisterServerEvent("rig_inventory:server:quick_craft", function(item_id)
+    local _src = source
+    _craft.request_craft(_src, item_id)
+end)
+
+RegisterServerEvent("rig_inventory:server:craft_finished", function(item_id)
+    local _src = source
+    _craft.finish_craft(_src, item_id)
 end)
 
 --- @section Lifecycle

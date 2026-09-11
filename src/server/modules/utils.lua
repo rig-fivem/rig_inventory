@@ -118,19 +118,28 @@ function m.set_item(source, col, row, group, item)
     })
 end
 
-function m.remove_item(source, col, row, group, amount)
+function m.remove_item(source, col, row, group, amount, popup)
     local item = m.get_item(source, col, row, group)
     if not item then return false end
 
     amount = amount or 1
     local qty = item.quantity or 1
+    local removed_qty = (qty <= amount) and qty or amount
+
+    local ok = false
 
     if qty <= amount then
-        return m.set_item(source, col, row, group, nil)
+        ok = m.set_item(source, col, row, group, nil)
+    else
+        item.quantity = qty - amount
+        ok = m.set_item(source, col, row, group, item)
     end
 
-    item.quantity = qty - amount
-    return m.set_item(source, col, row, group, item)
+    if ok and popup then
+        m.send_popup(source, item.id, removed_qty, "removed")
+    end
+
+    return ok
 end
 
 function m.place_item(source, group, col, row, item_data)
@@ -174,7 +183,7 @@ function m.place_item(source, group, col, row, item_data)
     return ok, "item_swapped_success", displaced
 end
 
-function m.add_item(source, item_id, quantity, group, metadata)
+function m.add_item(source, item_id, quantity, group, metadata, popup)
     quantity = quantity or 1
     if type(quantity) ~= "number" or quantity <= 0 then return false, "item_invalid_amount" end
 
@@ -190,7 +199,8 @@ function m.add_item(source, item_id, quantity, group, metadata)
     local max_stack = type(stackable) == "number" and stackable or math.huge
 
     local remaining = quantity
-    local search_groups = group and { group } or m.get_player_group_priority()
+    local search_groups = group and { group } or m.get_player_group_priority(source)
+    local added_total = 0
 
     if stackable ~= false then
         local inv = exports.rig:get_inventory(source)
@@ -205,7 +215,11 @@ function m.add_item(source, item_id, quantity, group, metadata)
                         local col, row = key:match("(%d+)_(%d+)")
                         m.set_item(source, tonumber(col), tonumber(row), group_id, existing)
                         remaining = remaining - add
-                        if remaining <= 0 then return true, "item_added_success" end
+                        added_total = added_total + add
+                        if remaining <= 0 and popup then
+                            m.send_popup(source, item_id, added_total)
+                            return true, "item_added_success"
+                        end
                     end
                 end
             end
@@ -219,7 +233,13 @@ function m.add_item(source, item_id, quantity, group, metadata)
             col, row = m.find_free_slot(source, group, w, h)
             target_group = group
         else
-            target_group, col, row = m.resolve_target_group(source, w, h)
+            for _, group_id in ipairs(search_groups) do
+                col, row = m.find_free_slot(source, group_id, w, h)
+                if col then
+                    target_group = group_id
+                    break
+                end
+            end
         end
 
         if not col then break end
@@ -240,6 +260,11 @@ function m.add_item(source, item_id, quantity, group, metadata)
         })
 
         remaining = remaining - add
+        added_total = added_total + add
+    end
+
+    if added_total > 0 and popup then
+        m.send_popup(source, item_id, added_total)
     end
 
     if remaining <= 0 then return true, "item_added_success" end
@@ -399,13 +424,16 @@ end
 
 --- @section Inventory Popup
 
-function m.send_popup(source, item_id, item_def, quantity, action)
+function m.send_popup(source, item_id, quantity, action)
+    local item = _items[item_id]
+    if not item then return end
+
     TriggerClientEvent("rig_inventory:client:inventory_popup", source, {
         item_id = item_id,
-        image = core.settings.general.image_path .. item_def.image,
+        image = core.settings.general.image_path .. item.image,
         quantity = quantity,
         action = action or "added",
-        rarity = item_def.metadata and item_def.metadata.rarity or "common"
+        rarity = item.metadata and item.metadata.rarity or "common"
     })
 end
 

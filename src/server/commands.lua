@@ -38,7 +38,6 @@ exports.rig:register_command({
             return
         end
 
-        -- Fallback validation if target player exists
         local target_ped = GetPlayerPed(target)
         if not target_ped or target_ped == 0 then
             exports.rig:notify(source, {
@@ -50,7 +49,6 @@ exports.rig:register_command({
             return
         end
 
-        -- Execute the add_item action export
         local success, err = exports.rig_inventory:add_item(target, item_id, quantity)
         if success then
             exports.rig:notify(source, {

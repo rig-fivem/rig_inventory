@@ -45,6 +45,19 @@ function m.build(payload)
                     },
                     center = _panels.build_center(player_data),
                     right = _panels.build_right()
+                },
+                crafting_page = {
+                    index = 2,
+                    title = "Crafting",
+                    layout = { left = 3, center = 2, spacer3 = 4, right = 3 },
+                    left = {
+                        type = "grid",
+                        title = { text = "Inventories" },
+                        layout = { scroll_x = "none", scroll_y = "scroll" },
+                        groups = _panels.build_player_groups(player_data, true)
+                    },
+                    center = _panels.build_center(player_data, true),
+                    right = _panels.build_right(true)
                 }
             },
             hotbar = _panels.build_hotbar(player_data)

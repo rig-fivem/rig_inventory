@@ -230,7 +230,12 @@ function m.handle_consumable_use(source, data)
         end
     end
 
-    _utils.remove_item(source, data.col, data.row, data.group, consume.remove_on_use or 1)
+    _utils.remove_item(source, data.col, data.row, data.group, consume.remove_on_use or 1, true)
+
+    if consume.return_item then
+        _utils.add_item(source, consume.return_item.id, consume.return_item.amount or 1, data.group, true)
+    end
+
     _utils.sync_and_refresh(source)
 
     return true
@@ -416,11 +421,11 @@ function m.animation_finished(source, data)
     local def = _items[data.item_id]
     if not def then return log("warn", "[animation_finished] no item def: " .. data.item_id) end
 
-    if def.category == "player_inventory" then
+    if def.category == "bags" then
         return m.toggle_player_inventory(source, { col = data.col, row = data.row, group = data.group })
     end
 
-    if def.category == "consumable" then
+    if def.category == "food" or def.category == "drinks" or def.category == "medical" then
         return m.handle_consumable_use(source, { col = data.col, row = data.row, group = data.group })
     end
 
@@ -459,7 +464,7 @@ function m.use_item(source, use_data)
     local category = def.category or "general"
 
     local weapon_categories = {
-        firearm = true,
+        firearms = true,
         melee = true,
         throwable = true
     }
@@ -468,7 +473,7 @@ function m.use_item(source, use_data)
     if category == "ammo" then return handle_ammo_use(source, col, row, item, def, group) end
     if category == "attachments" then return handle_attachment_use(source, col, row, item, def, group) end
 
-    if category == "player_inventory" then
+    if category == "bags" then
         local use_config = def.actions and def.actions.use
         if use_config and use_config.animation then
             TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
@@ -482,7 +487,7 @@ function m.use_item(source, use_data)
         return true
     end
 
-    if category == "consumable" then
+    if category == "food" or category == "drinks" or category == "medical" then
         local use_config = def.actions and def.actions.use
         if use_config and use_config.animation then
             TriggerClientEvent("rig_inventory:client:use_item_animation", source, {

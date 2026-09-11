@@ -33,7 +33,7 @@ return {
         actions = {
             craft = {
                 ingredients = {
-                    { id = "cloth", amount = 3 }
+                    { id = "cloth", amount = 30 }
                 }
             },
             drop = {

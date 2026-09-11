@@ -35,8 +35,7 @@ return {
             craft = {
                 duration = 3.5,
                 ingredients = {
-                    { id = "cloth", amount = 3 },
-                    { id = "alchohol", amount = 1 }
+                    { id = "cloth", amount = 3 }
                 },
             },
             drop = true,

@@ -117,8 +117,9 @@ function m.build_for_grid(raw_items, group_id)
         if def then
             local values = {}
             local progress = nil
+            local metadata = type(entry.metadata) == "table" and entry.metadata or {}
 
-            for meta_key, meta_value in pairs(entry.metadata or {}) do
+            for meta_key, meta_value in pairs(metadata) do
                 local meta_def = _metadata[meta_key]
                 if meta_def then
                     if meta_key == "durability" then progress = { value = meta_value } end
@@ -145,7 +146,7 @@ function m.build_for_grid(raw_items, group_id)
                     title = def.label or entry.id,
                     description = description or {},
                     values = (#values > 0) and values or nil,
-                    rarity = (entry.metadata and entry.metadata.rarity) or (def.metadata and def.metadata.rarity) or "common",
+                    rarity = (type(entry.metadata) == "table" and entry.metadata.rarity) or (def.metadata and def.metadata.rarity) or "common",
                     actions = m.build_actions(def, entry.col, entry.row, entry, group_id)
                 }
             }

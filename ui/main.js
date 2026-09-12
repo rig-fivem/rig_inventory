@@ -88,6 +88,15 @@ HANDLERS.update_slots = (data) => {
     ui.content.update_slots_from_server(data.items);
 };
 
+HANDLERS.update_hotbar = (data) => {
+    if (!data || !data.items) return;
+
+    const ui = window.ui_instance;
+    if (!ui || !ui.content) return;
+
+    ui.content.update_hotbar_from_server(data.items);
+};
+
 HANDLERS.inventory_popup = (data) => {
     if (!data) return;
     inventory_popup.show(data.payload);

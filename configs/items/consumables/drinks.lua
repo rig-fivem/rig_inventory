@@ -45,6 +45,9 @@ return {
         weight = 330,
         w = 1,
         h = 2,
+        metadata = {
+            rarity = "common"
+        },
         actions = {
             drop = {
                 model = "ba_prop_club_water_bottle"
@@ -59,7 +62,7 @@ return {
                     return_item = { id = "water_empty", amount = 1 }
                 },
                 animation = {
-                    progress = { message = "Drinking Dirty Water..." },
+                    progress = { type = "circle", message = "Drinking Dirty Water..." },
                     dict = "mp_player_intdrink",
                     anim = "loop_bottle",
                     flags = 49,

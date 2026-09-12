@@ -171,6 +171,17 @@ function m.update_grid(items, section_key)
     SendNUIMessage({ func = "update_grid", items = safe_items, section_key = section_key })
 end
 
+function m.update_hotbar(items)
+    if type(items) ~= "table" then
+        log("warn", "update_hotbar: invalid items table")
+        return
+    end
+
+    local safe_items = m.sanitize(items, "inventory_update")
+
+    SendNUIMessage({ func = "update_hotbar", items = safe_items })
+end
+
 --- @section Popup
 
 function m.inventory_popup(data)
@@ -196,7 +207,7 @@ RegisterNUICallback("nui:handler", function(data, cb)
         return
     end
 
-    if data.action == "grid_moved_item" then
+    if data.action == "grid_moved_item" or data.action == "slots_moved_item" then
         TriggerServerEvent("rig_inventory:server:move_item", data.dataset)
         if cb then cb({ success = true }) end
         return

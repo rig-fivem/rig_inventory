@@ -38,11 +38,12 @@ m.drop_item = _drop.drop_item
 m.pickup_drop = _drop.pickup_drop
 m.add_item = _utils.add_item
 m.remove_item = _utils.remove_item
+m.remove_item_by_id = _utils.remove_item_by_id
 
 --- @section Exports
 
 exports("add_item", _utils.add_item)
-exports("remove_item", _utils.remove_item)
+exports("remove_item", _utils.remove_item_by_id)
 exports("get_item_count", _utils.get_item_count)
 exports("has_item", _utils.has_item)
 

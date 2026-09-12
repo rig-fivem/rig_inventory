@@ -33,7 +33,8 @@ return {
         },
         actions = {
             craft = {
-                duration = 3.5,
+                progress = { type = "circle", message = "Crafting Bandage..." },
+                duration = 3500,
                 ingredients = {
                     { id = "cloth", amount = 3 }
                 },
@@ -47,7 +48,7 @@ return {
                     remove_on_use = 1
                 },
                 animation = {
-                    progress = { message = "Applying Bandage..." },
+                    progress = { type = "circle", message = "Applying Bandage..." },
                     dict = "missmic4",
                     anim = "michael_tux_fidget",
                     flags = 49,

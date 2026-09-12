@@ -57,7 +57,6 @@ local function apply_loadout_clothing(source, use_config, equipping)
         end
     end
 
-
     TriggerClientEvent("rig_inventory:client:apply_inventory_clothing", source, {
         action = equipping and "equip" or "remove",
         clothing = use_config.clothing,
@@ -150,7 +149,7 @@ local function handle_ammo_use(source, col, row, item, def, group)
     local weapon_hash = GetHashKey(weapon_item.id)
     SetPedAmmo(ped, weapon_hash, new_ammo)
 
-    _utils.remove_item(source, col, row, group, rounds_to_add)
+    _utils.remove_item(source, col, row, group, rounds_to_add, true)
     _utils.sync_and_refresh(source)
     return true
 end
@@ -192,7 +191,7 @@ local function handle_attachment_use(source, col, row, item, def, group)
 
     GiveWeaponComponentToPed(ped, weapon_hash, component_hash)
     table.insert(weapon_item.metadata.attachments, item.id)
-    _utils.remove_item(source, col, row, group, 1)
+    _utils.remove_item(source, col, row, group, 1, true)
     exports.rig:set_item_metadata(source, equipped.group, equipped.col .. "_" .. equipped.row, weapon_item.metadata, false)
     _utils.sync_and_refresh(source)
     return true
@@ -317,7 +316,7 @@ function m.toggle_player_inventory(source, data)
         item.metadata.equipped = true
         local stored_items = item.metadata.stored_items or {}
 
-        local removed = _utils.remove_item(source, data.col, data.row, data.group, 1)
+        local removed = _utils.remove_item(source, data.col, data.row, data.group, 1, true)
         if not removed then
             exports.rig:notify(source, { type = "error", header = "Inventory", message = "Failed to equip item", duration = 3000 })
             return log("error", "[toggle_player_inventory] failed to remove item from source")
@@ -461,6 +460,15 @@ function m.use_item(source, use_data)
     local def = _items[item.id]
     if not def then return log("error", "[use_item] no definition: " .. item.id) end
 
+    local use_config = def.actions and def.actions.use
+
+    if use_config == true then
+        local handler = core.usable_items:get(item.id)
+        if handler then
+            return handler(source, item.id, col, row, group)
+        end
+    end
+
     local category = def.category or "general"
 
     local weapon_categories = {
@@ -474,8 +482,7 @@ function m.use_item(source, use_data)
     if category == "attachments" then return handle_attachment_use(source, col, row, item, def, group) end
 
     if category == "bags" then
-        local use_config = def.actions and def.actions.use
-        if use_config and use_config.animation then
+        if use_config and type(use_config) == "table" and use_config.animation then
             TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
                 animation = use_config.animation,
                 col = col, row = row, group = group, item_id = item.id
@@ -488,8 +495,7 @@ function m.use_item(source, use_data)
     end
 
     if category == "food" or category == "drinks" or category == "medical" then
-        local use_config = def.actions and def.actions.use
-        if use_config and use_config.animation then
+        if use_config and type(use_config) == "table" and use_config.animation then
             TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
                 animation = use_config.animation,
                 col = col, row = row, group = group, item_id = item.id

@@ -17,6 +17,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 local _items = require("src.shared.data.items")
 local _inventories = require("configs.inventories")
 local _item_builder = require("src.client.nui.items")
+
 --- @section Initalisation
 
 local m = {}

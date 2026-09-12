@@ -53,7 +53,7 @@ function m.request_craft(source, item_id)
     local ok, missing = has_ingredients(source, craft.ingredients or {})
     if not ok then return notify_missing(source, missing) end
 
-    TriggerClientEvent("rig_inventory:client:play_animation", source, item_id)
+    TriggerClientEvent("rig_inventory:client:play_crafting_animation", source, item_id)
 end
 
 function m.finish_craft(source, item_id)
@@ -67,7 +67,7 @@ function m.finish_craft(source, item_id)
     if not ok then return notify_missing(source, missing) end
 
     for _, ingredient in ipairs(craft.ingredients or {}) do
-        _utils.remove_item(source, ingredient.id, ingredient.amount)
+        _utils.remove_item_by_id(source, ingredient.id, ingredient.amount, nil, true)
     end
 
     _utils.add_item(source, item_id, craft.amount or 1, nil, nil, true)

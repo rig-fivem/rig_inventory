@@ -14,9 +14,18 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @section Imports
 
+local _items = require("src.shared.data.items")
 local _inventories = require("configs.inventories")
 local _drop = require("src.server.modules.actions.drop")
 local _utils = require("src.server.modules.utils")
+
+--- @section Constants
+
+local HOTBAR_ALLOWED_CATEGORIES = {
+    food = true,
+    drinks = true,
+    medical = true
+}
 
 --- @section Initialisation
 
@@ -37,6 +46,11 @@ end
 local function parse_vehicle_group(group_id)
     local inv_type, plate = group_id:match("^vehicle:([^:]+):(.+)$")
     return inv_type ~= nil, inv_type, plate
+end
+
+local function is_hotbar_allowed(item_id)
+    local def = _items[item_id]
+    return def and HOTBAR_ALLOWED_CATEGORIES[def.category] == true
 end
 
 --- @section Adapters
@@ -142,20 +156,49 @@ end
 function m.move_item(source, move_data)
     if not move_data then return log("error", "[move_item] no data") end
 
-    local from_col = tonumber(move_data.from_col)
-    local from_row = tonumber(move_data.from_row)
-    local to_col = tonumber(move_data.to_col)
-    local to_row = tonumber(move_data.to_row)
     local from_group = resolve_group(move_data.from_section or move_data.from_group)
     local to_group = resolve_group(move_data.to_section or move_data.to_group)
 
-    if not from_col or not from_row or not to_col or not to_row or not from_group or not to_group then
+    if not from_group or not to_group then
         return log("error", ("[move_item] incomplete data: %s"):format(json.encode(move_data)))
     end
 
-    log("debug", ("[move_item] src:%s | from:%s_%s(%s) -> to:%s_%s(%s)"):format(source, from_col, from_row, from_group, to_col, to_row, to_group))
+    if to_group == "hotbar" and from_group ~= "hotbar" then
+        local from_col = tonumber(move_data.from_col)
+        local from_row = tonumber(move_data.from_row)
+        if not from_col or not from_row then
+            return log("error", "[move_item] hotbar assign missing from_col/from_row")
+        end
+
+        local item = _utils.get_item(source, from_col, from_row, from_group)
+        if not item or not is_hotbar_allowed(item.id) then
+            exports.rig:notify(source, {
+                type = "error", header = "Inventory",
+                message = "That item can't go in your hotbar",
+                duration = 3000
+            })
+            return _utils.sync_and_refresh(source)
+        end
+
+        return _utils.assign_to_hotbar(source, from_col, from_row, from_group, move_data.to_slot)
+    end
+
+    if from_group == "hotbar" and to_group ~= "hotbar" then
+        local to_col = tonumber(move_data.to_col)
+        local to_row = tonumber(move_data.to_row)
+        if not to_col or not to_row then
+            return log("error", ("[move_item] hotbar move missing to_col/to_row: %s"):format(json.encode(move_data)))
+        end
+        return _utils.move_from_hotbar(source, move_data.from_slot, to_col, to_row, to_group)
+    end
+
+    if from_group == "hotbar" and to_group == "hotbar" then
+        return _utils.swap_hotbar_slots(source, move_data.from_slot, move_data.to_slot)
+    end
 
     if to_group == "vicinity" then
+        local from_col = tonumber(move_data.from_col)
+        local from_row = tonumber(move_data.from_row)
         _drop.drop_item(source, { col = from_col, row = from_row, group = from_group })
         return
     end
@@ -165,6 +208,17 @@ function m.move_item(source, move_data)
         if drop_id then _drop.pickup_drop(source, drop_id) end
         return
     end
+
+    local from_col = tonumber(move_data.from_col)
+    local from_row = tonumber(move_data.from_row)
+    local to_col = tonumber(move_data.to_col)
+    local to_row = tonumber(move_data.to_row)
+
+    if not from_col or not from_row or not to_col or not to_row then
+        return log("error", ("[move_item] incomplete data: %s"):format(json.encode(move_data)))
+    end
+
+    log("debug", ("[move_item] src:%s | from:%s_%s(%s) -> to:%s_%s(%s)"):format(source, from_col, from_row, from_group, to_col, to_row, to_group))
 
     local from_is_vehicle, from_inv_type, from_plate = parse_vehicle_group(from_group)
     local to_is_vehicle, to_inv_type, to_plate = parse_vehicle_group(to_group)
@@ -187,7 +241,7 @@ function m.move_item(source, move_data)
 
     if from_side.container then from_side.container:save() end
     if to_side.container and to_side.container ~= from_side.container then to_side.container:save() end
-    
+
     _utils.sync_and_refresh(source, to_side.container or from_side.container)
 
     log("success", ("[move_item] src:%s %s -> %s ok (%s)"):format(source, from_group, to_group, tostring(msg)))

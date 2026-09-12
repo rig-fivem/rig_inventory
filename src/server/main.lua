@@ -22,6 +22,7 @@ local _craft = require("src.server.modules.actions.craft")
 
 local Drops = require("src.server.registry.drops")
 local Containers = require("src.server.registry.containers")
+local UsableItems = require("src.server.registry.usable_items")
 
 --- @section Variables
 
@@ -38,6 +39,7 @@ local starter_items = {
 
 core.drops = Drops.new()
 core.containers = Containers.new()
+core.usable_items = UsableItems.new()
 
 --- @section Usable Items
 
@@ -207,6 +209,27 @@ end)
 RegisterServerEvent("rig_inventory:server:craft_finished", function(item_id)
     local _src = source
     _craft.finish_craft(_src, item_id)
+end)
+
+RegisterServerEvent("rig_inventory:server:use_hotbar_slot", function(slot)
+    local _src = source
+    if type(slot) ~= "number" then return end
+
+    _actions.use_item(_src, {
+        col = slot,
+        row = 1,
+        group = "hotbar"
+    })
+end)
+
+--- @section Exports
+
+exports("register_usable_item", function(item_id, handler)
+    return core.usable_items:register(item_id, handler)
+end)
+
+exports("remove_usable_item", function(item_id)
+    return core.usable_items:remove(item_id)
 end)
 
 --- @section Lifecycle

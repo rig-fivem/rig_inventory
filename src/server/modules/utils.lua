@@ -107,12 +107,26 @@ end
 --- @section Actions
 
 function m.get_item(source, col, row, group)
+    if group == "hotbar" then
+        local inv_meta = m.get_inventory_metadata(source)
+        return inv_meta and inv_meta.hotbar and inv_meta.hotbar[tostring(col)]
+    end
+
     local inv = exports.rig:get_inventory(source)
     if not inv or not inv.items or not inv.items[group] then return nil end
     return inv.items[group][col .. "_" .. row]
 end
 
 function m.set_item(source, col, row, group, item)
+    if group == "hotbar" then
+        local inv_meta = m.get_inventory_metadata(source) or {}
+        inv_meta.hotbar = inv_meta.hotbar or {}
+        inv_meta.hotbar[tostring(col)] = item
+        
+        exports.rig:set_inventory_metadata(source, inv_meta, false)
+        return true
+    end
+
     return exports.rig:set_inventory_slots(source, {
         { group_id = group, key = col .. "_" .. row, item = item }
     })
@@ -140,6 +154,52 @@ function m.remove_item(source, col, row, group, amount, popup)
     end
 
     return ok
+end
+
+function m.remove_item_by_id(source, item_id, amount, metadata, popup)
+    amount = amount or 1
+
+    local inv = exports.rig:get_inventory(source)
+    if not inv or not inv.items then return false, "no_inventory" end
+
+    local remaining = amount
+    local removed_total = 0
+
+    for group_id, group_items in pairs(inv.items) do
+        for key, item in pairs(group_items) do
+            if remaining <= 0 then break end
+
+            if item.id == item_id and (not metadata or m.metadata_equal(item.metadata, metadata)) then
+                local col, row = key:match("^(%d+)_(%d+)$")
+                col, row = tonumber(col), tonumber(row)
+
+                if col and row then
+                    local qty = item.quantity or 1
+                    local take = math.min(qty, remaining)
+
+                    if qty <= take then
+                        m.set_item(source, col, row, group_id, nil)
+                    else
+                        item.quantity = qty - take
+                        m.set_item(source, col, row, group_id, item)
+                    end
+
+                    remaining = remaining - take
+                    removed_total = removed_total + take
+                end
+            end
+        end
+    end
+
+    if removed_total > 0 and popup then
+        m.send_popup(source, item_id, removed_total, "removed")
+    end
+
+    if removed_total > 0 then
+        return remaining <= 0, removed_total
+    end
+
+    return false, 0
 end
 
 function m.place_item(source, group, col, row, item_data)
@@ -456,6 +516,70 @@ end
 function m.has_item(source, item_id, amount, metadata)
     amount = amount or 1
     return m.get_item_count(source, item_id, metadata) >= amount
+end
+
+--- @section Hotbar
+
+function m.assign_to_hotbar(source, from_col, from_row, from_group, to_slot)
+    local item = m.get_item(source, from_col, from_row, from_group)
+    if not item then return log("warn", "[hotbar] source item missing") end
+
+    local inv_meta = m.get_inventory_metadata(source) or {}
+    inv_meta.hotbar = inv_meta.hotbar or {}
+
+    local existing = inv_meta.hotbar[tostring(to_slot)]
+
+    local removed = m.remove_item(source, from_col, from_row, from_group, item.quantity or 1)
+    if not removed then return log("error", "[hotbar] failed to remove source item") end
+
+    if existing then
+        m.place_item(source, from_group, from_col, from_row, {
+            id = existing.id, quantity = existing.quantity, metadata = existing.metadata
+        })
+    end
+
+    inv_meta.hotbar[tostring(to_slot)] = {
+        id = item.id,
+        quantity = item.quantity or 1,
+        metadata = item.metadata
+    }
+
+    exports.rig:set_inventory_metadata(source, inv_meta, false)
+    m.sync_and_refresh(source)
+end
+
+function m.move_from_hotbar(source, from_slot, to_col, to_row, to_group)
+    local inv_meta = m.get_inventory_metadata(source) or {}
+    inv_meta.hotbar = inv_meta.hotbar or {}
+
+    local entry = inv_meta.hotbar[tostring(from_slot)]
+    if not entry then return log("warn", "[hotbar] slot empty: " .. tostring(from_slot)) end
+
+    local placed, msg, displaced = m.place_item(source, to_group, to_col, to_row, {
+        id = entry.id, quantity = entry.quantity, metadata = entry.metadata
+    })
+
+    if not placed then
+        return log("error", "[hotbar] failed to place item: " .. tostring(msg))
+    end
+
+    inv_meta.hotbar[tostring(from_slot)] = displaced and {
+        id = displaced.id, quantity = displaced.quantity, metadata = displaced.metadata
+    } or nil
+
+    exports.rig:set_inventory_metadata(source, inv_meta, false)
+    m.sync_and_refresh(source)
+end
+
+function m.swap_hotbar_slots(source, from_slot, to_slot)
+    local inv_meta = m.get_inventory_metadata(source) or {}
+    inv_meta.hotbar = inv_meta.hotbar or {}
+
+    inv_meta.hotbar[tostring(from_slot)], inv_meta.hotbar[tostring(to_slot)] =
+        inv_meta.hotbar[tostring(to_slot)], inv_meta.hotbar[tostring(from_slot)]
+
+    exports.rig:set_inventory_metadata(source, inv_meta, false)
+    m.sync_and_refresh(source)
 end
 
 return m

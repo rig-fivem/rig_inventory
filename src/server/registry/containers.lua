@@ -10,12 +10,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @class Containers
 --- @file src/server/registry/containers.lua
---- @description Registry of loaded containers (vehicle gloveboxes/trunks, fridges,
---- chests, etc). New piece - didn't exist as a standalone module in the monolith,
---- `core.containers` was referenced there but never included in the extract, so
---- its API surface below is reconstructed from how the monolith actions/events
---- called into it (get, get_or_create_vehicle, get_locked_by_player,
---- unlock_all_for_player) plus what a sane vehicle-container cache needs.
+--- @description Registry of loaded containers (vehicle gloveboxes/trunks, fridges, chests, etc).
 
 --- @section Imports
 
@@ -112,17 +107,11 @@ function Containers:remove(identifier)
 end
 
 --- @section Locking
---- One container "open" per player at a time. Whoever calls open_inventory /
---- open_container for a fridge/chest/vehicle should `lock` it, and release it
---- with `unlock`/`unlock_all_for_player` on close/disconnect.
 
 function Containers:is_locked(identifier)
     return self.locks[identifier] ~= nil
 end
 
---- @param identifier string
---- @param source number
---- @return boolean success false if already locked by someone else
 function Containers:lock(identifier, source)
     if not identifier or not source then return false end
 
@@ -131,7 +120,6 @@ function Containers:lock(identifier, source)
         return false
     end
 
-    -- players can only have one container open at a time; release whatever they had before
     local previous = self.player_locks[source]
     if previous and previous ~= identifier then
         self:unlock(previous)
@@ -169,7 +157,6 @@ end
 
 --- @section Persistence
 
---- Saves every dirty, loaded container. Call on resource stop.
 function Containers:save_all()
     for _, container in pairs(self.containers) do
         if container:has_loaded() then

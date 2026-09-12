@@ -411,6 +411,8 @@ export class Content {
                 to_section,
                 to_group,
                 to_slot: to_slot_num,
+                from_col,
+                from_row,
                 item_id,
                 hotbar_involved: true
             });
@@ -450,6 +452,8 @@ export class Content {
                 to_section,
                 from_group,
                 from_slot: from_slot_num,
+                to_col,
+                to_row,
                 hotbar_involved: true
             });
 
@@ -527,10 +531,15 @@ export class Content {
     }
 
     update_hotbar_from_server(server_items) {
-        this.hotbar_items[HOTBAR_SECTION] = JSON.parse(JSON.stringify(server_items || {}));
-        if (this.hotbar_instance) this.hotbar_instance.update_items(this.hotbar_items);
+        const actual_items = (server_items && server_items.items) ? server_items.items : server_items;
+        
+        this.hotbar_items[HOTBAR_SECTION] = actual_items ? JSON.parse(JSON.stringify(actual_items)) : {};
+        
+        if (this.hotbar_instance) {
+            this.hotbar_instance.update_items(this.hotbar_items);
+        }
     }
-
+    
     set_content(html, section = "center") {
         $(`.content_body.${section}`).html(html);
     }

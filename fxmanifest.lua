@@ -11,7 +11,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 fx_version "cerulean"
 games { "gta5" }
 name "rig_inventory"
-version "0.1.0"
+version "0.2.0"
 description "Player inventory system for RIG (FiveM)."
 license "Apache 2.0"
 author "Case"

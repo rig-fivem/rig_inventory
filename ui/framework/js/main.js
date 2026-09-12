@@ -119,6 +119,6 @@ export class UIBuilder {
     }
 
     close() {
-        $.post(`https://${GetParentResourceName()}/gui:remove_focus`, JSON.stringify({}));
+        $.post(`https://${GetParentResourceName()}/nui:remove_focus`, JSON.stringify({}));
     }
 }

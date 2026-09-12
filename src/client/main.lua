@@ -16,6 +16,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 local _nui = require("src.client.modules.nui")
 local _inv = require("src.client.nui.inventory")
 local _item_builder = require("src.client.nui.items")
+local _panels = require("src.client.nui.panels")
 local _animations = require("src.client.modules.animations")
 local _utils = require("src.client.modules.utils")
 
@@ -87,7 +88,10 @@ RegisterNetEvent("rig_inventory:client:inventory_changed", function(player_data,
         end
 
         local loadout = player_data.metadata and player_data.metadata.loadout or {}
+        local hotbar = _panels.build_hotbar(player_data)
+
         _nui.update_slots({ loadout = _item_builder.build_loadout(loadout) }, "player_loadout")
+        _nui.update_hotbar({ items = hotbar.items })
     end
 
     local client_drops = core.client_drops and core.client_drops.drops or {}
@@ -144,14 +148,19 @@ AddEventHandler("rig_inventory:client:use_item_animation", function(data)
     end
     local ped = PlayerPedId()
     local anim = data.animation
-    --[[
+
     if anim.progress then
-        exports.rig:progress_circle({
-            header = anim.progress.message or "Using item...",
-            duration = (anim.duration or 5000)
-        })
+        local progress_type = anim.progress.type or "circle"
+        local duration = anim.duration or 5000
+        local message = anim.progress.message or "Using item..."
+
+        if progress_type == "bar" then
+            exports.rig:progress_bar({ message = message, duration = duration })
+        else
+            exports.rig:progress_circle({ message = message, duration = duration })
+        end
     end
-    ]]
+
     _animations.play(ped, anim, function()
         TriggerServerEvent("rig_inventory:server:animation_finished", {
             item_id = data.item_id,
@@ -162,26 +171,42 @@ AddEventHandler("rig_inventory:client:use_item_animation", function(data)
     end)
 end)
 
-RegisterNetEvent("rig_inventory:client:play_animation")
-AddEventHandler("rig_inventory:client:play_animation", function(item_id)
+RegisterNetEvent("rig_inventory:client:play_crafting_animation")
+AddEventHandler("rig_inventory:client:play_crafting_animation", function(item_id)
+    TriggerEvent("rig_inventory:client:close_inventory")
+    
     if not item_id then
-        log("error", "[play_animation] missing item id")
+        log("error", "[play_crafting_animation] missing item id")
         return
     end
 
     if not _items[item_id] then
-        log("error", "[play_animation] item id is not a registered item")
+        log("error", "[play_crafting_animation] item id is not a registered item")
         return
     end
 
     local item = _items[item_id]
     local ped = PlayerPedId()
 
+    local progress = item.actions.craft and item.actions.craft.progress or false
+    local duration = item.actions.craft and item.actions.craft.duration or 5000
+
+    if progress then
+        local progress_type = progress.type or "circle"
+        local message = progress.message or "Using item..."
+
+        if progress_type == "bar" then
+            exports.rig:progress_bar({ message = message, duration = duration })
+        else
+            exports.rig:progress_circle({ message = message, duration = duration })
+        end
+    end
+
     _animations.play(ped, {
         dict = "amb@prop_human_parking_meter@female@base",
         anim = "base_female",
         flags = 49,
-        duration = (item.actions.craft and item.actions.craft.duration or 3.5) * 1000
+        duration = duration,
     }, function()
         TriggerServerEvent("rig_inventory:server:craft_finished", item_id)
     end)
@@ -194,7 +219,6 @@ RegisterNetEvent("rig_inventory:client:init_drops", function(data)
 end)
 
 RegisterNetEvent("rig_inventory:client:add_drop", function(data)
-    print("adding client drop?")
     core.client_drops:add(data)
 end)
 
@@ -220,7 +244,7 @@ RegisterNetEvent("rig_inventory:client:add_vehicle_container", function(data)
     core.client_containers:add_vehicle(data)
 end)
 
---- @section Commands
+--- @section Keymapping
 
 RegisterCommand("inv:open", function()
     if IsNuiFocused() or IsPauseMenuActive() then return end
@@ -228,6 +252,14 @@ RegisterCommand("inv:open", function()
 end, false)
 
 RegisterKeyMapping("inv:open", "Open Inventory", "keyboard", "TAB")
+
+for i = 1, 8 do
+    RegisterCommand('inv:slot_' .. i, function()
+       TriggerServerEvent("rig_inventory:server:use_hotbar_slot", i)
+    end, false)
+
+    RegisterKeyMapping('inv:slot_' .. i, "Use slot ".. i, 'keyboard', i)
+end
 
 --- @section Threads
 

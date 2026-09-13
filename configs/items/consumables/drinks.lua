@@ -24,6 +24,7 @@ return {
             "Can be filled at water pumps, rivers, or lakes."
         },
         image = "water_empty.png",
+        stackable = 100,
         weight = 30,
         w = 1,
         h = 2,
@@ -42,6 +43,7 @@ return {
         },
         image = "water_dirty.png",
         category = "drinks",
+        stackable = 10,
         weight = 330,
         w = 1,
         h = 2,
@@ -95,6 +97,7 @@ return {
         },
         image = "water_salt.png",
         category = "drinks",
+        stackable = 10,
         weight = 330,
         w = 1,
         h = 2,
@@ -143,10 +146,11 @@ return {
             "Safe for drinking."
         },
         image = "water_clean.png",
+        category = "drinks",
+        stackable = 10,
         weight = 330,
         w = 1,
         h = 2,
-        category = "drinks",
         metadata = {
             rarity = "common",
             quality = 100,

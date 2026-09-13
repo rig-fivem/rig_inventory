@@ -15,6 +15,14 @@ local VEHICLE_CLASSES = {
     [19] = "commercial", [20] = "train"
 }
 
+function m.metadata_equal(a, b)
+    if type(a) ~= "table" then a = {} end
+    if type(b) ~= "table" then b = {} end
+    for k, v in pairs(a) do if b[k] ~= v then return false end end
+    for k, v in pairs(b) do if a[k] ~= v then return false end end
+    return true
+end
+
 function m.get_vehicle_class_name(class_id)
     return VEHICLE_CLASSES[class_id] or "sedan"
 end

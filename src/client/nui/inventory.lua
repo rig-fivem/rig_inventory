@@ -14,7 +14,6 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @section Imports
 
-local _nui = require("src.client.modules.nui")
 local _layout = require("src.client.nui.layout")
 local _panels = require("src.client.nui.panels")
 
@@ -28,7 +27,7 @@ function m.build(payload)
     local player_data = payload and payload.player_data
     if not player_data then return end
 
-    _nui.build_ui({
+    exports.rig:build_ui({
         header = _layout.build_header(player_data),
         footer = _layout.build_footer(),
         content = {

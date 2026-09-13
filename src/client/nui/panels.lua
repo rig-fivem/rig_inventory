@@ -17,6 +17,7 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 local _items = require("src.shared.data.items")
 local _inventories = require("configs.inventories")
 local _item_builder = require("src.client.nui.items")
+local _utils = require("src.client.modules.utils")
 
 --- @section Initalisation
 
@@ -31,6 +32,17 @@ local function calculate_group_weight(raw_items)
         total = total + ((def and def.weight or 0) * (entry.quantity or 1))
     end
     return total
+end
+
+local function resolve_live_item(player_data, link)
+    for group_id, group_items in pairs(player_data.items or {}) do
+        for _, item in pairs(group_items) do
+            if item.id == link.id and _utils.metadata_equal(item.metadata, link.metadata) then
+                return item
+            end
+        end
+    end
+    return nil
 end
 
 function m.build_player_groups(player_data)
@@ -218,27 +230,26 @@ function m.build_right(crafting)
 end
 
 function m.build_hotbar(player_data)
-    local raw_hotbar = player_data and player_data.metadata and player_data.metadata.hotbar or (player_data and player_data.hotbar) or {}
+    local raw_hotbar = player_data and player_data.metadata and player_data.metadata.hotbar or {}
     local hotbar_items = {}
 
-    for slot_str, entry in pairs(raw_hotbar) do
-        if entry and entry.id then
-            local def = _items[entry.id]
+    for slot_str, link in pairs(raw_hotbar) do
+        if link and link.id then
+            local live_item = resolve_live_item(player_data, link)
+            local def = _items[link.id]
             local slot_key = tostring(slot_str)
+
             hotbar_items[slot_key] = {
-                id = entry.id,
-                image = core.settings.general.image_path .. (entry.image or (def and def.image) or "default.png"),
-                quantity = entry.quantity or 1,
-                category = entry.category or (def and def.category) or "misc",
-                progress = entry.durability and { value = entry.durability } or (entry.progress or nil),
+                id = link.id,
+                image = core.settings.general.image_path .. (def and def.image or "default.png"),
+                quantity = live_item and (live_item.quantity or 1) or 0,
+                category = def and def.category or "misc",
+                empty = live_item == nil,
+                progress = live_item and live_item.metadata and live_item.metadata.durability and { value = live_item.metadata.durability } or nil,
                 on_hover = {
-                    title = entry.label or (def and def.label) or entry.id,
+                    title = def and def.label or link.id,
                     description = type(def and def.description) == "string" and { def.description } or ((def and def.description) or {}),
-                    values = entry.values or {},
-                    actions = {
-                        { id = "use_" .. entry.id, key = "E", label = "Use" }
-                    },
-                    rarity = (entry.metadata and entry.metadata.rarity) or (def and def.rarity) or "common"
+                    rarity = (link.metadata and link.metadata.rarity) or (def and def.rarity) or "common"
                 }
             }
         end
@@ -247,7 +258,7 @@ function m.build_hotbar(player_data)
     return {
         slot_count = 8,
         show_slot_numbers = true,
-        layout = { slot_size = "64px" },
+        layout = { slot_size = "58px" },
         items = hotbar_items
     }
 end

@@ -142,6 +142,12 @@ RegisterServerEvent("rig_inventory:server:move_item", function(data)
     _actions.move_item(_src, data)
 end)
 
+RegisterServerEvent("rig_inventory:server:split_item", function(data)
+    local _src = source
+
+    _actions.split_item(_src, data)
+end)
+
 RegisterServerEvent("rig_inventory:server:use_item", function(data)
     local _src = source
 
@@ -211,15 +217,14 @@ RegisterServerEvent("rig_inventory:server:craft_finished", function(item_id)
     _craft.finish_craft(_src, item_id)
 end)
 
-RegisterServerEvent("rig_inventory:server:use_hotbar_slot", function(slot)
-    local _src = source
-    if type(slot) ~= "number" then return end
+RegisterNetEvent("rig_inventory:server:use_hotbar_slot", function(slot)
+    local source = source
+    local item, col, row, group = _utils.resolve_hotbar_item(source, slot)
+    if not item then
+        return exports.rig:notify(source, { type = "error", header = "Inventory", message = "Nothing there", duration = 3000 })
+    end
 
-    _actions.use_item(_src, {
-        col = slot,
-        row = 1,
-        group = "hotbar"
-    })
+    _actions.use_item(source, { col = col, row = row, group = group })
 end)
 
 --- @section Exports
@@ -242,6 +247,32 @@ end)
 AddEventHandler("onResourceStop", function(resource)
     if GetCurrentResourceName() ~= resource then return end
     core.containers:save_all()
+end)
+
+AddEventHandler("rig:server:player_before_save", function(src)
+    local inv = exports.rig:get_inventory(src)
+    if not (inv and inv.metadata) then return end
+
+    local metadata = inv.metadata
+    local changed = false
+
+    if metadata.equipped_weapon then
+        metadata.equipped_weapon = nil
+        changed = true
+    end
+
+    if metadata.loadout then
+        for slot, entry in pairs(metadata.loadout) do
+            if entry and entry.id and entry.id:match("^weapon_") then
+                metadata.loadout[slot] = nil
+                changed = true
+            end
+        end
+    end
+
+    if changed then
+        exports.rig:set_inventory_metadata(src, metadata, false)
+    end
 end)
 
 --- @section Commands

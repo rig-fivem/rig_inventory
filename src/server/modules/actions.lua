@@ -23,7 +23,7 @@ end
 local _use = require("src.server.modules.actions.use")
 local _move = require("src.server.modules.actions.move")
 local _drop = require("src.server.modules.actions.drop")
-
+local _split = require("src.server.modules.actions.split")
 
 local _utils = require("src.server.modules.utils")
 
@@ -36,6 +36,7 @@ m.use_item = _use.use_item
 m.move_item = _move.move_item
 m.drop_item = _drop.drop_item
 m.pickup_drop = _drop.pickup_drop
+m.split_item = _split.split_item
 m.add_item = _utils.add_item
 m.remove_item = _utils.remove_item
 m.remove_item_by_id = _utils.remove_item_by_id

@@ -25,8 +25,8 @@ local m = {}
 --- @section General Utilities
 
 function m.metadata_equal(a, b)
-    if a == b then return true end
-    if not a or not b then return false end
+    if type(a) ~= "table" then a = {} end
+    if type(b) ~= "table" then b = {} end
     for k, v in pairs(a) do if b[k] ~= v then return false end end
     for k, v in pairs(b) do if a[k] ~= v then return false end end
     return true
@@ -527,20 +527,14 @@ function m.assign_to_hotbar(source, from_col, from_row, from_group, to_slot)
     local inv_meta = m.get_inventory_metadata(source) or {}
     inv_meta.hotbar = inv_meta.hotbar or {}
 
-    local existing = inv_meta.hotbar[tostring(to_slot)]
-
-    local removed = m.remove_item(source, from_col, from_row, from_group, item.quantity or 1)
-    if not removed then return log("error", "[hotbar] failed to remove source item") end
-
-    if existing then
-        m.place_item(source, from_group, from_col, from_row, {
-            id = existing.id, quantity = existing.quantity, metadata = existing.metadata
-        })
+    for slot_key, link in pairs(inv_meta.hotbar) do
+        if link and link.id == item.id and m.metadata_equal(link.metadata, item.metadata) then
+            inv_meta.hotbar[slot_key] = nil
+        end
     end
 
     inv_meta.hotbar[tostring(to_slot)] = {
         id = item.id,
-        quantity = item.quantity or 1,
         metadata = item.metadata
     }
 
@@ -548,27 +542,33 @@ function m.assign_to_hotbar(source, from_col, from_row, from_group, to_slot)
     m.sync_and_refresh(source)
 end
 
-function m.move_from_hotbar(source, from_slot, to_col, to_row, to_group)
+function m.unassign_hotbar_slot(source, slot)
     local inv_meta = m.get_inventory_metadata(source) or {}
     inv_meta.hotbar = inv_meta.hotbar or {}
-
-    local entry = inv_meta.hotbar[tostring(from_slot)]
-    if not entry then return log("warn", "[hotbar] slot empty: " .. tostring(from_slot)) end
-
-    local placed, msg, displaced = m.place_item(source, to_group, to_col, to_row, {
-        id = entry.id, quantity = entry.quantity, metadata = entry.metadata
-    })
-
-    if not placed then
-        return log("error", "[hotbar] failed to place item: " .. tostring(msg))
-    end
-
-    inv_meta.hotbar[tostring(from_slot)] = displaced and {
-        id = displaced.id, quantity = displaced.quantity, metadata = displaced.metadata
-    } or nil
+    inv_meta.hotbar[tostring(slot)] = nil
 
     exports.rig:set_inventory_metadata(source, inv_meta, false)
     m.sync_and_refresh(source)
+end
+
+function m.resolve_hotbar_item(source, slot)
+    local inv_meta = m.get_inventory_metadata(source)
+    local link = inv_meta and inv_meta.hotbar and inv_meta.hotbar[tostring(slot)]
+    if not link then return nil end
+
+    local inv = exports.rig:get_inventory(source)
+    if not inv or not inv.items then return nil end
+
+    for group_id, group_items in pairs(inv.items) do
+        for key, item in pairs(group_items) do
+            if item.id == link.id and m.metadata_equal(item.metadata, link.metadata) then
+                local col, row = key:match("^(%d+)_(%d+)$")
+                return item, tonumber(col), tonumber(row), group_id
+            end
+        end
+    end
+
+    return nil
 end
 
 function m.swap_hotbar_slots(source, from_slot, to_slot)

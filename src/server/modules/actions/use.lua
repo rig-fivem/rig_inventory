@@ -232,7 +232,8 @@ function m.handle_consumable_use(source, data)
     _utils.remove_item(source, data.col, data.row, data.group, consume.remove_on_use or 1, true)
 
     if consume.return_item then
-        _utils.add_item(source, consume.return_item.id, consume.return_item.amount or 1, data.group, true)
+        print("should be returning?")
+        _utils.add_item(source, consume.return_item.id, consume.return_item.amount or 1, nil, nil, true)
     end
 
     _utils.sync_and_refresh(source)

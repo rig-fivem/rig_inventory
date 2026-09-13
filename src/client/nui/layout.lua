@@ -12,13 +12,34 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file src/client/nui/layout.lua
 --- @description Handles building outer NUI frame structures.
 
---- @section Imports
-
-local _nui = require("src.client.modules.nui")
-
 --- @section Initalisation
 
 local m = {}
+
+--- @section Internal Functions
+
+local function get_player_headshot(player_ped)
+    player_ped = player_ped or PlayerPedId()
+    local headshot = RegisterPedheadshotTransparent(player_ped)
+    if not (headshot and IsPedheadshotValid(headshot)) then
+        return nil
+    end
+
+    local timeout, txd = 1000, nil
+    while not IsPedheadshotReady(headshot) and timeout > 0 do
+        Wait(10)
+        timeout = timeout - 10
+    end
+
+    if IsPedheadshotReady(headshot) then
+        txd = GetPedheadshotTxdString(headshot)
+        SetTimeout(2000, function() UnregisterPedheadshot(headshot) end)
+    else
+        UnregisterPedheadshot(headshot)
+    end
+
+    return txd and ("https://nui-img/%s/%s?v=%d"):format(txd, txd, GetGameTimer())
+end
 
 --- @section Functions
 
@@ -34,7 +55,7 @@ function m.build_header(player_data)
                 {
                     type = "group",
                     items = {
-                        { type = "logo", image = _nui.get_player_headshot() },
+                        { type = "logo", image = get_player_headshot() },
                         { type = "text", title = player_data.name or player_data.username or "Unknown", subtitle = player_data.unique_id }
                     }
                 }

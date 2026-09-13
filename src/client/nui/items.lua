@@ -97,7 +97,7 @@ function m.build_actions(def, col, row, entry, group)
                             local r = tonumber(data.dataset.row)
                             local group_id = data.dataset.group_id
                             if amt and c and r and group_id then
-                                TriggerServerEvent("rig:sv:split_item", { col = c, row = r, group = group_id, quantity = amt })
+                                TriggerServerEvent("rig_inventory:server:split_item", { col = c, row = r, group = group_id, quantity = amt })
                             end
                         end
                     },

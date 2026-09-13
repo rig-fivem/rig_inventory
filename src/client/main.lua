@@ -13,7 +13,6 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 
 --- @section Imports
 
-local _nui = require("src.client.modules.nui")
 local _inv = require("src.client.nui.inventory")
 local _item_builder = require("src.client.nui.items")
 local _panels = require("src.client.nui.panels")
@@ -29,6 +28,15 @@ local _items = require("src.shared.data.items")
 
 core.client_drops = Drops.new()
 core.client_containers = Containers.new()
+
+--- @section Functions
+
+local function handle_hotbar()
+    local player_data = exports.rig:get_player_data("inventory")
+    local hotbar_data = _panels.build_hotbar(player_data)
+
+    exports.rig:build_hotbar(hotbar_data)
+end
 
 --- @section Events
 
@@ -75,42 +83,41 @@ RegisterNetEvent("rig_inventory:client:close_inventory", function()
     core.client_vars.current_vehicle_data = nil
 
     ClearTimecycleModifier()
-    TriggerEvent("rig_inventory:client:close_ui")
+    exports.rig:close_ui()
+    handle_hotbar()
 end)
 
 RegisterNetEvent("rig_inventory:client:inventory_changed", function(player_data, container_data)
+    if player_data then
+        local hotbar = _panels.build_hotbar(player_data)
+        exports.rig:update_hotbar(hotbar.items)
+    end
+
     if not core.client_vars.inventory_open then return end
 
     if player_data and player_data.items then
         for group_id, raw_items in pairs(player_data.items) do
             local built = _item_builder.build_for_grid(raw_items, group_id)
-            _nui.update_grid(built, "left_" .. group_id)
+            exports.rig:update_grid(built, "left_" .. group_id)
         end
 
         local loadout = player_data.metadata and player_data.metadata.loadout or {}
-        local hotbar = _panels.build_hotbar(player_data)
-
-        _nui.update_slots({ loadout = _item_builder.build_loadout(loadout) }, "player_loadout")
-        _nui.update_hotbar({ items = hotbar.items })
+        exports.rig:update_slots({ loadout = _item_builder.build_loadout(loadout) }, "player_loadout")
     end
 
     local client_drops = core.client_drops and core.client_drops.drops or {}
     local vicinity_items = _item_builder.build_vicinity(client_drops, 2.5)
-    _nui.update_grid(vicinity_items, "vicinity")
+    exports.rig:update_grid(vicinity_items, "vicinity")
 
     if container_data and container_data.id and container_data.items then
         local subtype = container_data.subtype or core.client_vars.current_inv_type or "storage"
-
         local raw = container_data.items[subtype] or container_data.items[container_data.id] or container_data.items
         if type(raw) ~= "table" then raw = {} end
-
         local built = _item_builder.build_for_grid(raw, subtype)
-
         local section_key = core.client_vars.current_vehicle_data
             and ("vehicle:%s:%s"):format(subtype, core.client_vars.current_vehicle_data.plate)
             or ("right_" .. subtype)
-
-        _nui.update_grid(built, section_key)
+        exports.rig:update_grid(built, section_key)
     end
 end)
 
@@ -168,6 +175,7 @@ AddEventHandler("rig_inventory:client:use_item_animation", function(data)
             row = data.row,
             group = data.group
         })
+        handle_hotbar()
     end)
 end)
 
@@ -264,14 +272,19 @@ end
 --- @section Threads
 
 CreateThread(function()
-    while not exports.rig:is_playing() do
-        Wait(500)
-    end
+
 
     Wait(500)
 
     TriggerServerEvent("rig_inventory:server:request_drops")
     TriggerServerEvent("rig_inventory:server:request_containers")
+
+    local move_function = function(data)
+        TriggerServerEvent("rig_inventory:server:move_item", data)
+    end
+
+    exports.rig:set_slot_move_handler(move_function)
+    exports.rig:set_grid_move_handler(move_function)
 
     while true do
         if exports.rig:is_playing() then

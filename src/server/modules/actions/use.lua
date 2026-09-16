@@ -27,6 +27,12 @@ local CLOTHING_COMPONENTS = {
     [5] = { style = "bag_style", texture = "bag_texture" },
 }
 
+local WEAPON_CATEGORIES = {
+    firearms = true,
+    melee = true,
+    throwable = true
+}
+
 --- @section Apply Clothing
 
 local function apply_loadout_clothing(source, use_config, equipping)
@@ -66,24 +72,67 @@ end
 
 --- @section Weapon Handlers
 
+local function get_weapon_slot_key(loadout_slot, group)
+    return loadout_slot or ("group_" .. tostring(group))
+end
+
+local function find_target_weapon_slot(ped, inv_meta, ammo_item_id)
+    local selected_hash = GetSelectedPedWeapon(ped)
+    local candidates = {}
+
+    for _, equipped in pairs(inv_meta.equipped_weapons or {}) do
+        local weapon_def = _items[equipped.id]
+        local allowed = weapon_def and weapon_def.metadata and weapon_def.metadata.ammo_types or {}
+        for _, ammo_id in ipairs(allowed) do
+            if ammo_id == ammo_item_id then
+                candidates[#candidates + 1] = equipped
+                break
+            end
+        end
+    end
+
+    if #candidates == 0 then return nil end
+    if #candidates == 1 then return candidates[1] end
+
+    for _, c in ipairs(candidates) do
+        if GetHashKey(c.id) == selected_hash then return c end
+    end
+
+    return candidates[1]
+end
+
 local function handle_weapon_use(source, col, row, item, def, group)
     local ped = GetPlayerPed(source)
     if not ped or not DoesEntityExist(ped) then return false end
 
-    local inv_meta = _utils.get_inventory_metadata(source)
-    local equipped = inv_meta.equipped_weapon
+    local inv_meta = _utils.get_inventory_metadata(source) or {}
+    inv_meta.loadout = inv_meta.loadout or {}
+    inv_meta.equipped_weapons = inv_meta.equipped_weapons or {}
+
+    local use_config = def.actions and def.actions.use
+    local loadout_slot = use_config and use_config.loadout_slot
+    local slot_key = get_weapon_slot_key(loadout_slot, group)
+    local equipped = inv_meta.equipped_weapons[slot_key]
 
     if equipped and equipped.col == col and equipped.row == row and equipped.group == group and equipped.id == item.id and item.metadata and equipped.serial == item.metadata.serial then
-        RemoveAllPedWeapons(ped, true)
-        inv_meta.equipped_weapon = nil
+        RemoveWeaponFromPed(ped, GetHashKey(item.id))
+
+        if loadout_slot then
+            inv_meta.loadout[loadout_slot] = nil
+        end
+
+        inv_meta.equipped_weapons[slot_key] = nil
         exports.rig:set_inventory_metadata(source, inv_meta, false)
         _utils.sync_and_refresh(source)
 
-        TriggerEvent("rig_inventory:server:weapon_state_changed", source, false, nil)
+        TriggerEvent("rig_inventory:server:weapon_state_changed", source, false, { loadout_slot = loadout_slot })
         return true
     end
 
-    RemoveAllPedWeapons(ped, true)
+    if equipped then
+        RemoveWeaponFromPed(ped, GetHashKey(equipped.id))
+    end
+
     item.metadata = item.metadata or {}
 
     if not item.metadata.serial or item.metadata.serial == "" then
@@ -109,21 +158,40 @@ local function handle_weapon_use(source, col, row, item, def, group)
         end
     end
 
-    inv_meta.equipped_weapon = { col = col, row = row, group = group, id = item.id, serial = item.metadata.serial }
+    if loadout_slot then
+        inv_meta.loadout[loadout_slot] = {
+            id = item.id,
+            label = def.label,
+            image = def.image,
+            category = def.category,
+            metadata = item.metadata,
+            serial = item.metadata.serial,
+            source_group = group
+        }
+    end
+
+    inv_meta.equipped_weapons[slot_key] = { col = col, row = row, group = group, id = item.id, serial = item.metadata.serial, loadout_slot = loadout_slot }
     exports.rig:set_inventory_metadata(source, inv_meta, false)
     _utils.sync_and_refresh(source)
 
-    TriggerEvent("rig_inventory:server:weapon_state_changed", source, true, item)
+    TriggerEvent("rig_inventory:server:weapon_state_changed", source, true, {
+        id = item.id,
+        label = def.label,
+        metadata = item.metadata,
+        loadout_slot = loadout_slot
+    })
     return true
 end
 
 local function handle_ammo_use(source, col, row, item, def, group)
     local inv_meta = _utils.get_inventory_metadata(source)
-    local equipped = inv_meta.equipped_weapon
-    if not equipped then return false end
-
+    inv_meta.equipped_weapons = inv_meta.equipped_weapons or {}
+    
     local ped = GetPlayerPed(source)
     if not ped or not DoesEntityExist(ped) then return false end
+
+    local equipped = find_target_weapon_slot(ped, inv_meta, item.id)
+    if not equipped then return false end
 
     local weapon_item = _utils.get_item(source, equipped.col, equipped.row, equipped.group)
     if not weapon_item then return false end
@@ -156,7 +224,12 @@ end
 
 local function handle_attachment_use(source, col, row, item, def, group)
     local inv_meta = _utils.get_inventory_metadata(source)
-    local equipped = inv_meta.equipped_weapon
+    inv_meta.equipped_weapons = inv_meta.equipped_weapons or {}
+    
+    local ped = GetPlayerPed(source)
+    if not ped or not DoesEntityExist(ped) then return false end
+
+    local equipped = find_target_weapon_slot(ped, inv_meta, item.id)
     if not equipped then return false end
 
     local weapon_item = _utils.get_item(source, equipped.col, equipped.row, equipped.group)
@@ -377,6 +450,29 @@ function m.unequip_loadout_item(source, data)
 
     local use_config = def.actions and def.actions.use
 
+    if WEAPON_CATEGORIES[def.category] then
+        local ped = GetPlayerPed(source)
+        if ped and DoesEntityExist(ped) then
+            RemoveWeaponFromPed(ped, GetHashKey(slot_entry.id))
+        end
+
+        inv_meta.equipped_weapons = inv_meta.equipped_weapons or {}
+        for slot_key, equipped_wep in pairs(inv_meta.equipped_weapons) do
+            if equipped_wep.serial == (slot_entry.metadata and slot_entry.metadata.serial) then
+                inv_meta.equipped_weapons[slot_key] = nil
+                break
+            end
+        end
+
+        inv_meta.loadout[data.slot_id] = nil
+        exports.rig:set_inventory_metadata(source, inv_meta, false)
+        _utils.sync_and_refresh(source)
+
+        TriggerEvent("rig_inventory:server:weapon_state_changed", source, false, { loadout_slot = data.slot_id })
+        exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Holstered %s"):format(def.label), duration = 4000 })
+        return log("success", ("[unequip_loadout_item] holstered weapon %s from %s"):format(slot_entry.id, data.slot_id))
+    end
+
     if slot_entry.inventory_group then
         local group_contents = exports.rig:remove_inventory_group(source, slot_entry.inventory_group)
         slot_entry.metadata = slot_entry.metadata or {}
@@ -472,13 +568,7 @@ function m.use_item(source, use_data)
 
     local category = def.category or "general"
 
-    local weapon_categories = {
-        firearms = true,
-        melee = true,
-        throwable = true
-    }
-
-    if weapon_categories[category] then return handle_weapon_use(source, col, row, item, def, group) end
+    if WEAPON_CATEGORIES[category] then return handle_weapon_use(source, col, row, item, def, group) end
     if category == "ammo" then return handle_ammo_use(source, col, row, item, def, group) end
     if category == "attachments" then return handle_attachment_use(source, col, row, item, def, group) end
 

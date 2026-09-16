@@ -256,8 +256,8 @@ AddEventHandler("rig:server:player_before_save", function(src)
     local metadata = inv.metadata
     local changed = false
 
-    if metadata.equipped_weapon then
-        metadata.equipped_weapon = nil
+    if metadata.equipped_weapons then
+        metadata.equipped_weapons = nil
         changed = true
     end
 

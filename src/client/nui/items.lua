@@ -218,7 +218,7 @@ function m.build_loadout(loadout)
             dataset = { slot_id = slot_id, serial = entry.serial },
             on_hover = {
                 title = entry.label or (def and def.label) or entry.id,
-                rarity = (entry.metadata and entry.metadata.rarity) or "common",
+                rarity = (entry.metadata and entry.metadata.rarity) or (def and def.metadata and def.metadata.rarity) or "common",
                 actions = {
                     {
                         id = "unequip",

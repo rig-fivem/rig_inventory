@@ -31,7 +31,7 @@ return {
         icon = "fa-solid fa-bag-shopping",
         is_player = true,
         columns = 10,
-        rows = 5,
+        rows = 8,
         max_weight = 60000,
         collapsible = true,
         collapsed = false,

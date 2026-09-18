@@ -157,7 +157,10 @@ function m.remove_item(source, col, row, group, amount, popup)
 end
 
 function m.remove_item_by_id(source, item_id, amount, metadata, popup)
+    if not source or not item_id then return false, "invalid_params" end
+
     amount = amount or 1
+    if type(amount) ~= "number" or amount <= 0 then return false, "invalid_amount" end
 
     local inv = exports.rig:get_inventory(source)
     if not inv or not inv.items then return false, "no_inventory" end
@@ -195,11 +198,15 @@ function m.remove_item_by_id(source, item_id, amount, metadata, popup)
         m.send_popup(source, item_id, removed_total, "removed")
     end
 
-    if removed_total > 0 then
-        return remaining <= 0, removed_total
+    if remaining <= 0 then 
+        return true, "item_removed_success" 
+    end
+    
+    if removed_total > 0 then 
+        return false, "insufficient_amount" 
     end
 
-    return false, 0
+    return false, "item_not_found"
 end
 
 function m.place_item(source, group, col, row, item_data)

@@ -1,3 +1,10 @@
+# v0.5.0
+- Removed `weapon_stonehatchet` wasnt spawning in, someone else can figure that out for default weapons idc enough xD
+- Added `weapon_crowbar` mainly for testing in a update for my `boii_diving` script
+- Added better reason return logging for `remove_item` export
+- Swapped `backpack` to `back` throughout, makes more sense since diving tanks, parachutes etc can go on back.
+- Changed how using items works, loadout items can now cover multiple slots, checks for wearables inside inventories etc.
+
 # v0.4.0
 - Added some more ammo types, firearms, and melee weapons.
 - All weapons now get added to loadout slots, "primary" for shotguns, rifles etc, secondary for pistols.

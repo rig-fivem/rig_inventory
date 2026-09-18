@@ -78,16 +78,16 @@ function m.build_center(player_data)
                 layout_type = "positioned",
                 collapsible = false,
                 slots = {
-                    { id = "helmet", label = "Helmet", position = { top = "0%", left = "0%" }, size = "72px" },
-                    { id = "mask", label = "Mask", position = { top = "0%", left = "30%" }, size = "72px" },
-                    { id = "backpack", label = "Bag", position = { top = "22%", left = "0%" }, size = "72px" },
-                    { id = "primary", label = "Sling 1", position = { top = "22%", left = "30%" }, size = "72px" },
-                    { id = "vest", label = "Vest", position = { top = "44%", left = "0%" }, size = "72px" },
-                    { id = "secondary", label = "Sling 2", position = { top = "44%", left = "30%" }, size = "72px" },
-                    { id = "shirt", label = "Shirt", position = { top = "66%", left = "0%" }, size = "72px" },
-                    { id = "melee", label = "Melee", position = { top = "66%", left = "30%" }, size = "72px" },
-                    { id = "pants", label = "Pants", position = { top = "85%", left = "0%" }, size = "72px" },
-                    { id = "shoes", label = "Shoes", position = { top = "85%", left = "30%" }, size = "72px" }
+                    { id = "head", label = "Head", position = { top = "0%", left = "0%" }, size = "96px" },
+                    { id = "mask", label = "Mask", position = { top = "0%", left = "40%" }, size = "96px" },
+                    { id = "back", label = "Back", position = { top = "20%", left = "0%" }, size = "96px" },
+                    { id = "primary", label = "Primary", position = { top = "20%", left = "40%" }, size = "96px" },
+                    { id = "vest", label = "Vest", position = { top = "42%", left = "0%" }, size = "96px" },
+                    { id = "secondary", label = "Secondary", position = { top = "42%", left = "40%" }, size = "96px" },
+                    { id = "torso", label = "Torso", position = { top = "64%", left = "0%" }, size = "96px" },
+                    { id = "melee", label = "Melee", position = { top = "64%", left = "40%" }, size = "96px" },
+                    { id = "legs", label = "Legs", position = { top = "82%", left = "0%" }, size = "96px" },
+                    { id = "feet", label = "Feet", position = { top = "82%", left = "40%" }, size = "96px" }
                 },
                 items = loadout_items
             }

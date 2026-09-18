@@ -12,14 +12,15 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/weapons/firearms.lua
 --- @description Handles all static data for items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "firearms",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "weapon",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
     --- @section Pistols
 
     weapon_pistol = {
+        type = "weapon",
         label = "Pistol",
         description = "9mm semi-automatic pistol.",
         image = "weapon_pistol.png",
@@ -47,6 +48,7 @@ return {
     --- @section Revolvers
 
     weapon_navyrevolver = {
+        type = "weapon",
         label = "Navy Revolver",
         description = "An old cap-and-ball revolver chambered for lead balls and black powder.",
         image = "weapon_navyrevolver.png",
@@ -72,6 +74,7 @@ return {
     },
 
     weapon_doubleaction = {
+        type = "weapon",
         label = "Double-Action Revolver",
         description = "A lightweight six-shooter with a quick trigger.",
         image = "weapon_doubleaction.png",
@@ -99,6 +102,7 @@ return {
     --- @section SMGs
 
     weapon_microsmg = {
+        type = "weapon",
         label = "Micro SMG",
         description = "A compact, rapid-fire submachine gun chambered in 9mm.",
         image = "weapon_microsmg.png",
@@ -124,6 +128,7 @@ return {
     },
 
     weapon_smg = {
+        type = "weapon",
         label = "SMG",
         description = "A well-balanced submachine gun with a higher rate of fire.",
         image = "weapon_smg.png",
@@ -151,6 +156,7 @@ return {
     --- @section Shotguns
 
     weapon_pumpshotgun = {
+        type = "weapon",
         label = "Pump Shotgun",
         description = "12 gauge pump-action shotgun.",
         image = "weapon_pumpshotgun.png",
@@ -178,6 +184,7 @@ return {
     --- @section Rifles
 
     weapon_musket = {
+        type = "weapon",
         label = "Musket",
         description = "Black powder musket firing lead ball shot.",
         image = "weapon_musket.png",
@@ -203,6 +210,7 @@ return {
     },
 
     weapon_carbinerifle = {
+        type = "weapon",
         label = "Carbine Rifle",
         description = "5.56mm semi-automatic carbine.",
         image = "weapon_carbinerifle.png",
@@ -228,6 +236,7 @@ return {
     },
 
     weapon_assaultrifle = {
+        type = "weapon",
         label = "Assault Rifle",
         description = "7.62mm AK-pattern assault rifle.",
         image = "weapon_assaultrifle.png",
@@ -253,6 +262,7 @@ return {
     },
 
     weapon_sniperrifle = {
+        type = "weapon",
         label = "Sniper Rifle",
         description = ".308 bolt-action sniper rifle.",
         image = "weapon_sniperrifle.png",
@@ -280,6 +290,7 @@ return {
     --- @section LMGs
 
     weapon_mg = {
+        type = "weapon",
         label = "Machine Gun",
         description = "A belt-fed 7.62mm machine gun, heavy but relentless in a firefight.",
         image = "weapon_mg.png",

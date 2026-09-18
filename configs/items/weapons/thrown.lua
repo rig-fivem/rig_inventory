@@ -12,8 +12,8 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/weapons/thrown.lua
 --- @description Handles all static data for items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "thrown",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "thrown",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 

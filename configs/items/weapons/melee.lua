@@ -12,16 +12,17 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/weapons/melee.lua
 --- @description Handles all static data for items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "melee",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "weapon",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
-    weapon_stonehatchet = {
-        label = "Stone Hatchet",
-        description = "A crude hatchet bound with stone and cord. Slow, but it'll get the job done.",
-        image = "weapon_stonehatchet.png",
-        weight = 900,
+    weapon_crowbar = {
+        type = "weapon",
+        label = "Crowbar",
+        description = "A heavy steel tool useful for prying things open.",
+        image = "weapon_crowbar.png",
+        weight = 1200,
         w = 1,
         h = 2,
         stackable = false,
@@ -32,7 +33,7 @@ return {
             durability = 60
         },
         actions = {
-            drop = { model = "w_me_stonehatchet" },
+            drop = { model = "w_me_crowbar" },
             use = {
                 loadout_slot = "melee"
             }
@@ -40,6 +41,7 @@ return {
     },
 
     weapon_hatchet = {
+        type = "weapon",
         label = "Hatchet",
         description = "A sturdy wood-cutting utility hatchet, doubles well in a pinch.",
         image = "weapon_hatchet.png",
@@ -62,6 +64,7 @@ return {
     },
 
     weapon_knife = {
+        type = "weapon",
         label = "Knife",
         description = "A small fixed-blade knife, good for close quarters or field dressing game.",
         image = "weapon_knife.png",
@@ -84,6 +87,7 @@ return {
     },
 
     weapon_machete = {
+        type = "weapon",
         label = "Machete",
         description = "A long, heavy blade suited for both self-defense and heavy fieldwork.",
         image = "weapon_machete.png",

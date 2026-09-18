@@ -12,12 +12,13 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/equipment/bags.lua
 --- @description Handles all static data for items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "bags",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "equipment",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
     dufflebag = {
+        type = "equipment",
         label = "Dufflebag",
         description = "It's a duffle, it holds things.",
         image = "dufflebag.png",
@@ -35,7 +36,7 @@ return {
             },
             use = {
                 inventory_group = "dufflebag",
-                loadout_slot = "backpack",
+                loadout_slot = "back",
                 clothing = {
                     component_id = 5,
                     drawable = 45,
@@ -44,7 +45,7 @@ return {
                     female = { drawable = 45, texture = 0 }
                 },
                 animation = {
-                    progress = { message = "Equipping backpack..." },
+                    progress = { message = "Equipping back..." },
                     dict = "clothingshirt",
                     anim = "try_shirt_positive_d",
                     flags = 49,

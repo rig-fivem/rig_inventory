@@ -12,12 +12,13 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/weapons/ammo.lua
 --- @description Handles all static data for items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "ammo",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "ammo",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
     ammo_9mm = {
+        type = "ammo",
         label = "9mm Ammo",
         description = "Standard 9x19mm Parabellum ammunition.",
         image = "ammo_9mm.png",
@@ -36,6 +37,7 @@ return {
     },
 
     ammo_357 = {
+        type = "ammo",
         label = ".357 Magnum Ammo",
         description = "Heavy caliber rounds for handguns and revolvers.",
         image = "ammo_357.png",
@@ -54,6 +56,7 @@ return {
     },
 
     ammo_12gauge = {
+        type = "ammo",
         label = "12 Gauge Shells",
         description = "Heavy 12 gauge shotgun shells.",
         image = "ammo_12gauge.png",
@@ -72,6 +75,7 @@ return {
     },
 
     ammo_556 = {
+        type = "ammo",
         label = "5.56mm Ammo",
         description = "Intermediate rifle ammunition for military carbines and assault rifles.",
         image = "ammo_556.png",
@@ -90,6 +94,7 @@ return {
     },
 
     ammo_762 = {
+        type = "ammo",
         label = "7.62mm Ammo",
         description = "Heavy intermediate rounds used by AK-pattern rifles and light machine guns.",
         image = "ammo_762.png",
@@ -108,6 +113,7 @@ return {
     },
 
     ammo_308 = {
+        type = "ammo",
         label = ".308 Rifle Ammo",
         description = "High-powered rifle cartridges designed for long-range engagements.",
         image = "ammo_308.png",
@@ -126,6 +132,7 @@ return {
     },
 
     ammo_musket = {
+        type = "ammo",
         label = "Lead Balls & Black Powder",
         description = "Primitive black powder and heavy lead shot for musket firearms.",
         image = "ammo_musket.png",

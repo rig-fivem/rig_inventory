@@ -11,8 +11,6 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @module materials
 --- @file configs/items/equipment/materials.lua
 --- @description Handles all static data for items.
----
---- CATEGORY HERE IS NOT REALLY IMPORTANT, IS JUST FOR UI GROUPING
 
 return {
 

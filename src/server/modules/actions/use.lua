@@ -17,28 +17,32 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 local _items = require("src.shared.data.items")
 local _utils = require("src.server.modules.utils")
 
+local _avatar_data = exports.rig:require("src.shared.data.avatars")
+
 --- @section Initialisation
 
 local m = {}
 
 --- @section Constants
 
-local CLOTHING_COMPONENTS = {
-    [5] = { style = "bag_style", texture = "bag_texture" },
-}
-
-local WEAPON_CATEGORIES = {
-    firearms = true,
-    melee = true,
-    throwable = true
-}
+local CLOTHING_COMPONENTS = _avatar_data.constants.clothing
 
 --- @section Apply Clothing
+
+local function get_clothing_mapping(component_id, is_prop)
+    for _, entry in ipairs(CLOTHING_COMPONENTS) do
+        if entry.index == component_id and (entry.is_prop or false) == (is_prop or false) then
+            return entry
+        end
+    end
+    return nil
+end
+
 
 local function apply_loadout_clothing(source, use_config, equipping)
     if not use_config or not use_config.clothing then return end
 
-    local mapping = CLOTHING_COMPONENTS[use_config.clothing.component_id]
+    local mapping = get_clothing_mapping(use_config.clothing.component_id)
     if not mapping then
         log("warn", ("[apply_loadout_clothing] no style mapping for component_id %s - add one to CLOTHING_COMPONENTS"):format(tostring(use_config.clothing.component_id)))
     else
@@ -186,7 +190,7 @@ end
 local function handle_ammo_use(source, col, row, item, def, group)
     local inv_meta = _utils.get_inventory_metadata(source)
     inv_meta.equipped_weapons = inv_meta.equipped_weapons or {}
-    
+
     local ped = GetPlayerPed(source)
     if not ped or not DoesEntityExist(ped) then return false end
 
@@ -225,7 +229,7 @@ end
 local function handle_attachment_use(source, col, row, item, def, group)
     local inv_meta = _utils.get_inventory_metadata(source)
     inv_meta.equipped_weapons = inv_meta.equipped_weapons or {}
-    
+
     local ped = GetPlayerPed(source)
     if not ped or not DoesEntityExist(ped) then return false end
 
@@ -334,7 +338,16 @@ function m.toggle_player_inventory(source, data)
 
     local use_config = def.actions.use
     local inventory_group = use_config.inventory_group
-    local loadout_slot = use_config.loadout_slot
+    
+    -- Normalize loadout_slot to a table to support single or multiple slots
+    local raw_loadout_slot = use_config.loadout_slot
+    local loadout_slots = {}
+    if type(raw_loadout_slot) == "table" then
+        loadout_slots = raw_loadout_slot
+    elseif type(raw_loadout_slot) == "string" then
+        loadout_slots = { raw_loadout_slot }
+    end
+    local primary_slot = loadout_slots[1]
 
     local inv_meta = _utils.get_inventory_metadata(source) or {}
     inv_meta.equipped_inventories = inv_meta.equipped_inventories or {}
@@ -343,8 +356,8 @@ function m.toggle_player_inventory(source, data)
     local is_equipped = item.metadata and item.metadata.equipped == true
 
     if is_equipped then
-        if loadout_slot then
-            inv_meta.loadout[loadout_slot] = nil
+        for _, slot in ipairs(loadout_slots) do
+            inv_meta.loadout[slot] = nil
         end
 
         if inventory_group then
@@ -355,7 +368,7 @@ function m.toggle_player_inventory(source, data)
         item.metadata.equipped = false
 
         for i, equipped_inv in ipairs(inv_meta.equipped_inventories) do
-            if equipped_inv.group == (inventory_group or loadout_slot) and equipped_inv.serial == item.metadata.serial then
+            if equipped_inv.group == (inventory_group or primary_slot) and equipped_inv.serial == item.metadata.serial then
                 table.remove(inv_meta.equipped_inventories, i)
                 break
             end
@@ -366,20 +379,56 @@ function m.toggle_player_inventory(source, data)
         apply_loadout_clothing(source, use_config, false)
         exports.rig:set_inventory_metadata(source, inv_meta, false)
         _utils.sync_and_refresh(source)
+
+        if #loadout_slots > 0 then
+            for _, slot in ipairs(loadout_slots) do
+                TriggerEvent("rig_inventory:server:loadout_slot_changed", source, {
+                    slot_id = slot,
+                    item_id = item.id,
+                    equipped = false,
+                    metadata = item.metadata
+                })
+            end
+        elseif inventory_group then
+            TriggerEvent("rig_inventory:server:loadout_slot_changed", source, {
+                slot_id = inventory_group,
+                item_id = item.id,
+                equipped = false,
+                metadata = item.metadata
+            })
+        end
+
         exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Unequipped %s"):format(def.label), duration = 4000 })
-        log("success", ("[toggle_player_inventory] unequipped %s from slot %s"):format(item.id, loadout_slot or inventory_group))
+        log("success", ("[toggle_player_inventory] unequipped %s"):format(item.id))
     else
-        for _, equipped_inv in ipairs(inv_meta.equipped_inventories) do
-            local other_item = _utils.get_item(source, equipped_inv.col, equipped_inv.row, equipped_inv.source_group)
-            if other_item and other_item.metadata and other_item.metadata.serial ~= (item.metadata and item.metadata.serial or "") then
-                exports.rig:notify(source, { type = "error", header = "Inventory", message = "You already have one equipped!", duration = 4000 })
-                return log("warn", "[toggle_player_inventory] already equipped for src: " .. source)
+        -- Check and clear all required slots
+        for _, slot in ipairs(loadout_slots) do
+            if inv_meta.loadout[slot] then
+                local occupying = inv_meta.loadout[slot]
+
+                if occupying.inventory_group and occupying.inventory_group == data.group then
+                    exports.rig:notify(source, { type = "error", header = "Inventory", message = "Take that out of the bag before equipping it", duration = 4000 })
+                    return log("warn", "[toggle_player_inventory] item is stored inside the loadout item occupying slot " .. slot)
+                end
+
+                m.unequip_loadout_item(source, { slot_id = slot })
+
+                inv_meta = _utils.get_inventory_metadata(source) or {}
+                inv_meta.equipped_inventories = inv_meta.equipped_inventories or {}
+                inv_meta.loadout = inv_meta.loadout or {}
+
+                if inv_meta.loadout[slot] then
+                    exports.rig:notify(source, { type = "error", header = "Inventory", message = "Could not free required slots", duration = 4000 })
+                    return log("error", "[toggle_player_inventory] failed to auto-unequip occupant of slot: " .. slot)
+                end
             end
         end
 
-        if loadout_slot and inv_meta.loadout[loadout_slot] then
-            exports.rig:notify(source, { type = "error", header = "Inventory", message = "That slot is already occupied!", duration = 4000 })
-            return log("warn", "[toggle_player_inventory] loadout slot occupied: " .. loadout_slot)
+        -- Re-resolve defensively after potentially clearing multiple slots
+        item = _utils.get_item(source, data.col, data.row, data.group)
+        if not item then
+            exports.rig:notify(source, { type = "error", header = "Inventory", message = "Lost track of that item, try again", duration = 4000 })
+            return log("error", "[toggle_player_inventory] item vanished after freeing slots")
         end
 
         item.metadata = item.metadata or {}
@@ -405,8 +454,8 @@ function m.toggle_player_inventory(source, data)
             end
         end
 
-        if loadout_slot then
-            inv_meta.loadout[loadout_slot] = {
+        for _, slot in ipairs(loadout_slots) do
+            inv_meta.loadout[slot] = {
                 id = item.id,
                 label = def.label,
                 image = def.image,
@@ -419,7 +468,7 @@ function m.toggle_player_inventory(source, data)
         end
 
         table.insert(inv_meta.equipped_inventories, {
-            group = inventory_group or loadout_slot,
+            group = inventory_group or primary_slot,
             serial = item.metadata.serial,
             col = data.col,
             row = data.row,
@@ -430,11 +479,29 @@ function m.toggle_player_inventory(source, data)
         apply_loadout_clothing(source, use_config, true)
         exports.rig:set_inventory_metadata(source, inv_meta, false)
         _utils.sync_and_refresh(source)
+
+        if #loadout_slots > 0 then
+            for _, slot in ipairs(loadout_slots) do
+                TriggerEvent("rig_inventory:server:loadout_slot_changed", source, {
+                    slot_id = slot,
+                    item_id = item.id,
+                    equipped = true,
+                    metadata = item.metadata
+                })
+            end
+        elseif inventory_group then
+            TriggerEvent("rig_inventory:server:loadout_slot_changed", source, {
+                slot_id = inventory_group,
+                item_id = item.id,
+                equipped = true,
+                metadata = item.metadata
+            })
+        end
+
         exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Equipped %s"):format(def.label), duration = 4000 })
-        log("success", ("[toggle_player_inventory] equipped %s to slot %s"):format(item.id, loadout_slot or inventory_group))
+        log("success", ("[toggle_player_inventory] equipped %s"):format(item.id))
     end
 end
-core.toggle_player_inventory = m.toggle_player_inventory
 
 function m.unequip_loadout_item(source, data)
     if not data or not data.slot_id then return log("error", "[unequip_loadout_item] missing slot_id") end
@@ -450,7 +517,7 @@ function m.unequip_loadout_item(source, data)
 
     local use_config = def.actions and def.actions.use
 
-    if WEAPON_CATEGORIES[def.category] then
+    if def.type == "weapon" then
         local ped = GetPlayerPed(source)
         if ped and DoesEntityExist(ped) then
             RemoveWeaponFromPed(ped, GetHashKey(slot_entry.id))
@@ -490,7 +557,19 @@ function m.unequip_loadout_item(source, data)
         end
     end
 
-    inv_meta.loadout[data.slot_id] = nil
+    -- Identify all slots this item occupies to clear them all simultaneously
+    local loadout_slots = {}
+    if use_config and type(use_config.loadout_slot) == "table" then
+        loadout_slots = use_config.loadout_slot
+    elseif use_config and type(use_config.loadout_slot) == "string" then
+        loadout_slots = { use_config.loadout_slot }
+    else
+        loadout_slots = { data.slot_id }
+    end
+
+    for _, slot in ipairs(loadout_slots) do
+        inv_meta.loadout[slot] = nil
+    end
 
     local target_group = slot_entry.source_group or "pockets"
     local success = _utils.add_item(source, slot_entry.id, 1, target_group, slot_entry.metadata)
@@ -505,8 +584,18 @@ function m.unequip_loadout_item(source, data)
 
     exports.rig:set_inventory_metadata(source, inv_meta, false)
     _utils.sync_and_refresh(source)
+
+    for _, slot in ipairs(loadout_slots) do
+        TriggerEvent("rig_inventory:server:loadout_slot_changed", source, {
+            slot_id = slot,
+            item_id = slot_entry.id,
+            equipped = false,
+            metadata = slot_entry.metadata
+        })
+    end
+
     exports.rig:notify(source, { type = "success", header = "Inventory", message = ("Unequipped %s"):format(def.label), duration = 4000 })
-    log("success", ("[unequip_loadout_item] src:%s unequipped %s from %s"):format(source, slot_entry.id, data.slot_id))
+    log("success", ("[unequip_loadout_item] src:%s unequipped %s"):format(source, slot_entry.id))
 end
 
 function m.animation_finished(source, data)
@@ -517,11 +606,11 @@ function m.animation_finished(source, data)
     local def = _items[data.item_id]
     if not def then return log("warn", "[animation_finished] no item def: " .. data.item_id) end
 
-    if def.category == "bags" then
+    if def.type == "equipment" then
         return m.toggle_player_inventory(source, { col = data.col, row = data.row, group = data.group })
     end
 
-    if def.category == "food" or def.category == "drinks" or def.category == "medical" then
+    if def.type == "consumable" then
         return m.handle_consumable_use(source, { col = data.col, row = data.row, group = data.group })
     end
 
@@ -541,14 +630,9 @@ end
 function m.use_item(source, use_data)
     if not source or not use_data then return log("error", "[use_item] invalid params") end
 
-    local col, row, group
-
-    if type(use_data) == "table" then
-        col = tonumber(use_data.col)
-        row = tonumber(use_data.row)
-        group = use_data.group
-    end
-
+    local col = tonumber(use_data.col)
+    local row = tonumber(use_data.row)
+    local group = use_data.group
     if not col or not row or not group then return log("warn", "[use_item] col/row/group required") end
 
     local item = _utils.get_item(source, col, row, group)
@@ -558,48 +642,39 @@ function m.use_item(source, use_data)
     if not def then return log("error", "[use_item] no definition: " .. item.id) end
 
     local use_config = def.actions and def.actions.use
+    local item_type = def.type or "generic"
 
-    if use_config == true then
-        local handler = core.usable_items:get(item.id)
-        if handler then
-            return handler(source, item.id, col, row, group)
-        end
-    end
+    if item_type == "weapon" then return handle_weapon_use(source, col, row, item, def, group) end
+    if item_type == "ammo" then return handle_ammo_use(source, col, row, item, def, group) end
+    if item_type == "attachment" then return handle_attachment_use(source, col, row, item, def, group) end
 
-    local category = def.category or "general"
-
-    if WEAPON_CATEGORIES[category] then return handle_weapon_use(source, col, row, item, def, group) end
-    if category == "ammo" then return handle_ammo_use(source, col, row, item, def, group) end
-    if category == "attachments" then return handle_attachment_use(source, col, row, item, def, group) end
-
-    if category == "bags" then
-        if use_config and type(use_config) == "table" and use_config.animation then
+    if item_type == "equipment" then
+        if type(use_config) == "table" and use_config.animation then
             TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
-                animation = use_config.animation,
-                col = col, row = row, group = group, item_id = item.id
+                animation = use_config.animation, col = col, row = row, group = group, item_id = item.id
             })
             return true
         end
-
-        m.toggle_player_inventory(source, { col = col, row = row, group = group })
-        return true
+        return m.toggle_player_inventory(source, { col = col, row = row, group = group })
     end
 
-    if category == "food" or category == "drinks" or category == "medical" then
-        if use_config and type(use_config) == "table" and use_config.animation then
+    if item_type == "consumable" then
+        if type(use_config) == "table" and use_config.animation then
             TriggerClientEvent("rig_inventory:client:use_item_animation", source, {
-                animation = use_config.animation,
-                col = col, row = row, group = group, item_id = item.id
+                animation = use_config.animation, col = col, row = row, group = group, item_id = item.id
             })
             return true
         end
         return m.handle_consumable_use(source, { col = col, row = row, group = group })
     end
 
-    local ok = exports.rig:run_hook(item.id, source, col, row, group)
-    if not ok then
-        log("info", "[use_item] item not usable: " .. item.id)
+    if use_config == true then
+        local handler = core.usable_items:get(item.id)
+        if handler then return handler(source, item.id, col, row, group) end
     end
+
+    local ok = exports.rig:run_hook(item.id, source, col, row, group)
+    if not ok then log("info", "[use_item] item not usable: " .. item.id) end
     return ok
 end
 

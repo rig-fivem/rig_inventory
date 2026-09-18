@@ -12,8 +12,8 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/consumables/drinks.lua
 --- @description Handles all static data items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "drinks",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "consumable",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
@@ -36,6 +36,7 @@ return {
     },
 
     water_dirty = {
+        type = "consumable",
         label = "Dirty Water Bottle",
         description = {
             "Water collected from an unsterilized source.",
@@ -90,6 +91,7 @@ return {
     },
 
     water_salt = {
+        type = "consumable",
         label = "Salt Water Bottle",
         description = {
             "Water collected directly from the ocean.",
@@ -140,6 +142,7 @@ return {
     },
 
     water_clean = {
+        type = "consumable",
         label = "Clean Water Bottle",
         description = {
             "A refreshing bottle of purified water.",

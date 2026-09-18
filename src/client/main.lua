@@ -24,6 +24,8 @@ local Containers = require("src.client.registry.containers")
 
 local _items = require("src.shared.data.items")
 
+local _avatar_data = exports.rig:require("src.shared.data.avatars")
+
 --- @section Globals
 
 core.client_drops = Drops.new()
@@ -123,27 +125,49 @@ end)
 
 RegisterNetEvent("rig_inventory:client:apply_inventory_clothing")
 AddEventHandler("rig_inventory:client:apply_inventory_clothing", function(data)
-    local ped = PlayerPedId()
-    if data.action == "equip" then
-        if data.clothing then
-            local model = GetEntityModel(ped)
-            local is_male = model == GetHashKey("mp_m_freemode_01")
-            local clothing = data.clothing
-            local drawable = is_male and clothing.male and clothing.male.drawable or clothing.drawable
-            local texture = is_male and clothing.male and clothing.male.texture or clothing.texture
-            SetPedComponentVariation(ped, clothing.component_id, drawable, texture, 0)
-        end
-        if data.prop then
-            SetPedPropIndex(ped, data.prop.component_id, data.prop.drawable, data.prop.texture, true)
-        end
-    elseif data.action == "remove" then
-        if data.clothing then
-            SetPedComponentVariation(ped, data.clothing.component_id, 0, 0, 0)
-        end
-        if data.prop then
-            ClearPedProp(ped, data.prop.component_id)
+    local current_ped = exports.rig:get_current_avatar_ped()
+    local item = data.clothing or data.prop
+    if not item then 
+        TriggerEvent("rig_inventory:client:close_inventory")
+        return 
+    end
+
+    local is_prop = data.prop ~= nil
+    local target_entry = nil
+
+    for _, entry in ipairs(_avatar_data.constants.clothing) do
+        if entry.index == item.component_id and (entry.is_prop or false) == is_prop then
+            target_entry = entry
+            break
         end
     end
+
+    if not target_entry then 
+        TriggerEvent("rig_inventory:client:close_inventory")
+        return 
+    end
+
+    if data.action == "equip" then
+        local is_male = current_ped == "mp_m_freemode_01"
+        local drawable = is_male and item.male and item.male.drawable or item.drawable
+        local texture = is_male and item.male and item.male.texture or item.texture
+
+        exports.rig:update_avatar_appearance("clothing", target_entry.style, drawable)
+        if target_entry.texture then
+            exports.rig:update_avatar_appearance("clothing", target_entry.texture, texture)
+        end
+
+    elseif data.action == "remove" then
+        local ped_styles = _avatar_data.styles[current_ped] and _avatar_data.styles[current_ped].clothing or {}
+        local default_style = ped_styles[target_entry.style] or (is_prop and -1 or 0)
+        local default_texture = ped_styles[target_entry.texture] or 0
+
+        exports.rig:update_avatar_appearance("clothing", target_entry.style, default_style)
+        if target_entry.texture then
+            exports.rig:update_avatar_appearance("clothing", target_entry.texture, default_texture)
+        end
+    end
+    
     TriggerEvent("rig_inventory:client:close_inventory")
 end)
 
@@ -272,7 +296,9 @@ end
 --- @section Threads
 
 CreateThread(function()
-
+    while not exports.rig:is_playing() do
+        Wait(100)
+    end
 
     Wait(500)
 

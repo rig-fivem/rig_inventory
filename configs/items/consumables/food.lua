@@ -12,29 +12,13 @@ License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
 --- @file configs/items/consumables/food.lua
 --- @description Handles all static data items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "food",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
-
---[[
-----------------------------------------
-RIG Inventory (built for RIG-FiveM)
-
-Author: Case (https://caseirl.dev)
-Repo: https://github.com/rig-fivem/rig_inventory
-License: https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE
-----------------------------------------
-]]
-
---- @module food
---- @file configs/items/consumables/food.lua
---- @description Handles all static data items.
----
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "food",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "consumable",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
     bread = {
+        type = "consumable",
         label = "Bread",
         description = {
             "A loaf of bread.",
@@ -75,6 +59,7 @@ return {
     },
 
     canned_dog_food = {
+        type = "consumable",
         label = "Dog Food",
         description = {
             "A can of dog food.",

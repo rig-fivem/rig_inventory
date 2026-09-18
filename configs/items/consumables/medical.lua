@@ -12,12 +12,13 @@ License: [https://github.com/rig-fivem/rig_inventory/blob/main/LICENSE](https://
 --- @file configs/items/consumables/medical.lua
 --- @description Handles all medical consumable items.
 ---
---- DO NOT FORGET TO INCLUDE THE CATEGORY `category = "medical",` IF YOU ADD MORE TYPES.
---- WITHOUT THE CATEGORY `use_item` WILL FAIL
+--- DO NOT FORGET TO INCLUDE THE TYPE `type = "consumable",` IF YOU ADD MORE TYPES.
+--- WITHOUT THE TYPE `use_item` WILL FAIL
 
 return {
 
     bandage = {
+        type = "consumable",
         label = "Bandage",
         description = {
             "A medical bandage treated with antiseptic.",
